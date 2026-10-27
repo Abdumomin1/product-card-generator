@@ -1,0 +1,1702 @@
+<!DOCTYPE html>
+<html lang="ru" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Генератор карточек товаров — Ламинат 1000×1000px</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts: Lato (все нужные начертания, включая Black Italic 900i и Bold 700) -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Lato:ital,wght@0,400;0,700;0,900;1,400;1,700;1,900&display=swap" rel="stylesheet">
+    <!-- Phosphor Icons -->
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        lato: ['Lato', 'sans-serif'],
+                    },
+                    colors: {
+                        egger: {
+                            blue: '#18354A',
+                            cream: '#F4F3EA',
+                            yellow: '#F3C95B',
+                            red: '#EE3124',
+                            green: '#0D7A11',
+                            drop: '#00A8E8'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        /* Кастомный скроллбар */
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: #1e293b; }
+        ::-webkit-scrollbar-thumb { background: #475569; border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: #64748b; }
+
+        /* Шахматный фон прозрачности для превью холста */
+        .checkerboard {
+            background-color: #1e293b;
+            background-image: 
+                linear-gradient(45deg, #0f172a 25%, transparent 25%), 
+                linear-gradient(-45deg, #0f172a 25%, transparent 25%), 
+                linear-gradient(45deg, transparent 75%, #0f172a 75%), 
+                linear-gradient(-45deg, transparent 75%, #0f172a 75%);
+            background-size: 20px 20px;
+            background-position: 0 0, 0 10px, 10px -10px, -10px 0px;
+        }
+    </style>
+</head>
+<body class="bg-slate-950 text-slate-100 font-sans min-h-screen flex flex-col selection:bg-amber-500 selection:text-slate-950">
+
+    <!-- Принудительная предзагрузка шрифтовых начертаний Lato для Canvas -->
+    <div aria-hidden="true" class="fixed -top-96 -left-96 opacity-0 pointer-events-none select-none" style="font-family: 'Lato', sans-serif;">
+        <span style="font-weight: 400; font-style: normal;">КЛАСС</span>
+        <span style="font-weight: 700; font-style: normal;">32 33 AC4 AC5 E1 KM5 V4</span>
+        <span style="font-weight: 700; font-style: italic;">8 мм Толщина</span>
+        <span style="font-weight: 900; font-style: italic;">EHL032 Дуб Альвадос</span>
+    </div>
+
+    <!-- ВЕРХНЯЯ ПАНЕЛЬ НАВИГАЦИИ -->
+    <header class="border-b border-slate-800 bg-slate-900/80 backdrop-blur-md sticky top-0 z-30">
+        <div class="max-w-[1600px] mx-auto px-4 py-3 flex flex-wrap items-center justify-between gap-3">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-400 to-amber-600 flex items-center justify-center text-slate-950 font-black text-xl shadow-lg shadow-amber-500/20">
+                    <i class="ph-bold ph-BoundingBox"></i>
+                </div>
+                <div>
+                    <div class="flex items-center gap-2">
+                        <h1 class="font-bold text-base sm:text-lg tracking-tight text-white">Product Card Studio</h1>
+                        <span class="text-xs px-2 py-0.5 rounded-full bg-amber-500/15 text-amber-400 border border-amber-500/30 font-medium">1000×1000 px</span>
+                    </div>
+                    <p class="text-xs text-slate-400">Автоматический генератор карточек декора для бота (Шрифт Lato)</p>
+                </div>
+            </div>
+
+            <!-- Статус шаблонов и быстрые кнопки -->
+            <div class="flex items-center gap-2 flex-wrap">
+                <button onclick="openTemplateModal()" class="flex items-center gap-2 px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-xs sm:text-sm font-medium transition">
+                    <i class="ph-fill ph-Stack text-amber-400 text-base"></i>
+                    <span>Шаблоны и Шрифты</span>
+                    <span id="templateStatusBadge" class="px-1.5 py-0.5 text-[10px] rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">Встроенный + PNG</span>
+                </button>
+
+                <button onclick="openGithubModal()" class="flex items-center gap-2 px-3 py-2 rounded-xl bg-indigo-500/15 hover:bg-indigo-500/25 border border-indigo-500/30 text-indigo-300 text-xs sm:text-sm font-medium transition">
+                    <i class="ph-bold ph-GithubLogo text-base"></i>
+                    <span>Как залить на GitHub Pages</span>
+                </button>
+
+                <button onclick="downloadCurrentCard()" class="flex items-center gap-2 px-4 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs sm:text-sm shadow-lg shadow-amber-500/20 transition">
+                    <i class="ph-bold ph-DownloadSimple text-base"></i>
+                    <span>Скачать PNG</span>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- ОСНОВНОЙ РАБОЧИЙ ЭКРАН -->
+    <main class="flex-1 max-w-[1600px] w-full mx-auto p-4 grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+
+        <!-- ЛЕВАЯ КОЛОНКА: ВВОД ДАННЫХ, AI ПАРСЕР И НАСТРОЙКИ ХАРАКТЕРИСТИК (5 колонок) -->
+        <div class="lg:col-span-5 space-y-4">
+
+            <!-- БЛОК 1: БЫСТРАЯ ВСТАВКА ТЕКСТА / GEMINI AI ПАРСЕР -->
+            <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4 shadow-xl">
+                <div class="flex items-center justify-between mb-2">
+                    <label class="text-xs font-semibold uppercase tracking-wider text-amber-400 flex items-center gap-1.5">
+                        <i class="ph-fill ph-Sparkle text-sm"></i>
+                        Быстрый парсер характеристик (Текст или AI)
+                    </label>
+                    <div class="flex gap-1.5">
+                        <button onclick="loadPreset('EHL032')" class="text-[11px] px-2 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 transition" title="Загрузить пример EHL032">
+                            Пример EHL032
+                        </button>
+                        <button onclick="loadPreset('EHL039')" class="text-[11px] px-2 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 transition" title="Переключить заголовок на EHL039">
+                            EHL039
+                        </button>
+                        <button onclick="loadPreset('EHL135')" class="text-[11px] px-2 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 transition" title="Эталон EHL135">
+                            Эталон EHL135
+                        </button>
+                    </div>
+                </div>
+
+                <textarea id="rawSpecsInput" rows="4" 
+                    class="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-xs sm:text-sm text-slate-200 placeholder-slate-500 focus:outline-none focus:border-amber-500 transition font-mono leading-relaxed"
+                    placeholder="Вставь сюда описание с сайта или из таблицы, например:&#10;EHL032 Дуб Альвадос&#10;Толщина, мм - 8 мм&#10;Класс - 33 кл&#10;Фаска - Да&#10;Замковое соединение: Clic it">EHL032 Дуб Альвадос
+Толщина, мм - 8 мм
+Класс - 33 кл
+Влагостойкость - Влагостойкая поверхность
+Фаска - Да
+Гарантия - 25 лет
+Замковое соединение: Clic it</textarea>
+
+                <div class="flex flex-wrap items-center gap-2 mt-2.5">
+                    <button onclick="parseRawTextLocally()" class="flex-1 py-2 px-3 rounded-xl bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 border border-emerald-500/30 font-semibold text-xs sm:text-sm flex items-center justify-center gap-1.5 transition">
+                        <i class="ph-bold ph-Lightning"></i>
+                        <span>Заполнить из текста (Мгновенно)</span>
+                    </button>
+                    <button id="aiSearchBtn" onclick="fetchSpecsWithGemini()" class="py-2 px-3 rounded-xl bg-amber-500/15 hover:bg-amber-500/25 text-amber-300 border border-amber-500/30 font-semibold text-xs sm:text-sm flex items-center justify-center gap-1.5 transition" title="Найти характеристики в интернете через Gemini + Google Search">
+                        <i class="ph-bold ph-MagnifyingGlass"></i>
+                        <span>Найти через ИИ</span>
+                    </button>
+                </div>
+                <p id="parserStatus" class="text-[11px] text-slate-400 mt-1.5 hidden"></p>
+            </div>
+
+            <!-- БЛОК 2: ЗАГРУЗКА ФОТО ТЕКСТУРЫ (ОДНО ИЛИ ПАЧКА) -->
+            <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4 shadow-xl">
+                <div class="flex items-center justify-between mb-2">
+                    <label class="text-xs font-semibold uppercase tracking-wider text-slate-300 flex items-center gap-1.5">
+                        <i class="ph-fill ph-Image text-amber-400 text-sm"></i>
+                        1. Фото текстуры декора (Фон)
+                    </label>
+                    <label class="flex items-center gap-1.5 text-xs text-slate-400 cursor-pointer select-none">
+                        <input type="checkbox" id="autoTitleFromFilename" checked class="rounded bg-slate-800 border-slate-700 text-amber-500 focus:ring-0">
+                        <span>Брать заголовок из имени файла</span>
+                    </label>
+                </div>
+
+                <div id="dropZone" onclick="document.getElementById('textureFileInput').click()" 
+                    class="border-2 border-dashed border-slate-700 hover:border-amber-500/60 bg-slate-950/60 hover:bg-slate-950 rounded-xl p-4 text-center cursor-pointer transition group">
+                    <input type="file" id="textureFileInput" accept="image/*" multiple class="hidden" onchange="handleTextureUpload(event)">
+                    <div class="flex items-center justify-center gap-3">
+                        <div class="w-10 h-10 rounded-full bg-slate-800 group-hover:bg-amber-500/20 flex items-center justify-center text-amber-400 transition">
+                            <i class="ph-bold ph-UploadSimple text-xl"></i>
+                        </div>
+                        <div class="text-left">
+                            <p class="text-xs sm:text-sm font-semibold text-slate-200 group-hover:text-amber-300 transition">Нажми или перетащи сюда фото декора (.jpg, .png)</p>
+                            <p class="text-[11px] text-slate-400">Можно выбрать сразу много файлов (например, <code class="text-slate-300">EHL039 Дуб паркетный.jpg</code>)</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Очередь загруженных фоток (для пакетной работы) -->
+                <div id="photoQueueContainer" class="mt-3 hidden">
+                    <div class="flex items-center justify-between text-xs text-slate-400 mb-1.5">
+                        <span>Загруженные декоры (<span id="queueCount">0</span>):</span>
+                        <button onclick="downloadAllQueue()" class="text-amber-400 hover:underline font-medium flex items-center gap-1">
+                            <i class="ph-bold ph-Download"></i> Скачать все по очереди
+                        </button>
+                    </div>
+                    <div id="photoQueueList" class="flex gap-2 overflow-x-auto pb-1"></div>
+                </div>
+            </div>
+
+            <!-- БЛОК 3: ДЕТАЛЬНАЯ НАСТРОЙКА ВСЕХ 7 ИКОНОК И ЗАГОЛОВКА -->
+            <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4 shadow-xl space-y-4">
+                <div class="flex items-center justify-between border-b border-slate-800 pb-2.5">
+                    <h2 class="text-xs font-semibold uppercase tracking-wider text-slate-300 flex items-center gap-1.5">
+                        <i class="ph-fill ph-SlidersHorizontal text-amber-400 text-sm"></i>
+                        2. Параметры на плашке (Lato Black Italic / Bold)
+                    </h2>
+                    <span class="text-[11px] text-slate-400">Все изменения сразу видны справа</span>
+                </div>
+
+                <!-- ЗАГОЛОВОК ДЕКОРА -->
+                <div>
+                    <div class="flex justify-between items-center mb-1">
+                        <label class="text-xs text-slate-300 font-medium">Заголовок по центру (Lato Black Italic)</label>
+                        <div class="flex gap-1">
+                            <button onclick="setTitleValue('EHL032 Дуб Альвадос')" class="text-[10px] px-1.5 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-amber-300">EHL032 Дуб Альвадос</button>
+                            <button onclick="setTitleValue('EHL039 Дуб паркетный')" class="text-[10px] px-1.5 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-amber-300">EHL039 Дуб паркетный</button>
+                        </div>
+                    </div>
+                    <input type="text" id="titleInput" value="EHL032 Дуб Альвадос" oninput="renderCard()"
+                        class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-sm font-bold italic text-white focus:outline-none focus:border-amber-500">
+                </div>
+
+                <!-- СЕТКА ОСНОВНЫХ ПАРАМЕТРОВ -->
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                    <!-- Иконка 1: Толщина -->
+                    <div class="bg-slate-950/70 border border-slate-800/80 rounded-xl p-2.5">
+                        <label class="text-[11px] text-slate-400 block mb-1">1. Толщина (мм)</label>
+                        <div class="flex gap-1 mb-1.5">
+                            <button onclick="setField('thicknessInput', '8')" class="flex-1 py-1 rounded bg-slate-800 hover:bg-slate-700 text-xs font-bold">8</button>
+                            <button onclick="setField('thicknessInput', '10')" class="flex-1 py-1 rounded bg-slate-800 hover:bg-slate-700 text-xs font-bold">10</button>
+                            <button onclick="setField('thicknessInput', '12')" class="flex-1 py-1 rounded bg-slate-800 hover:bg-slate-700 text-xs font-bold">12</button>
+                        </div>
+                        <input type="text" id="thicknessInput" value="8" oninput="renderCard()"
+                            class="w-full bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1 text-xs font-bold text-center text-white">
+                    </div>
+
+                    <!-- Иконка 2: Класс нагрузки -->
+                    <div class="bg-slate-950/70 border border-slate-800/80 rounded-xl p-2.5">
+                        <label class="text-[11px] text-slate-400 block mb-1">2. Класс нагрузки</label>
+                        <div class="flex gap-1 mb-1.5">
+                            <button onclick="setLoadClass('31')" class="flex-1 py-1 rounded bg-slate-800 hover:bg-slate-700 text-xs font-bold">31</button>
+                            <button onclick="setLoadClass('32')" class="flex-1 py-1 rounded bg-slate-800 hover:bg-slate-700 text-xs font-bold">32</button>
+                            <button onclick="setLoadClass('33')" class="flex-1 py-1 rounded bg-slate-800 hover:bg-slate-700 text-xs font-bold">33</button>
+                            <button onclick="setLoadClass('34')" class="flex-1 py-1 rounded bg-slate-800 hover:bg-slate-700 text-xs font-bold">34</button>
+                        </div>
+                        <input type="text" id="loadClassInput" value="33" oninput="renderCard()"
+                            class="w-full bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1 text-xs font-bold text-center text-white">
+                    </div>
+
+                    <!-- Иконка 3: Износостойкость AC -->
+                    <div class="bg-slate-950/70 border border-slate-800/80 rounded-xl p-2.5">
+                        <label class="text-[11px] text-slate-400 block mb-1">3. Износостойкость</label>
+                        <div class="flex gap-1 mb-1.5">
+                            <button onclick="setField('acInput', 'AC3')" class="flex-1 py-1 rounded bg-slate-800 hover:bg-slate-700 text-xs font-bold">AC3</button>
+                            <button onclick="setField('acInput', 'AC4')" class="flex-1 py-1 rounded bg-slate-800 hover:bg-slate-700 text-xs font-bold">AC4</button>
+                            <button onclick="setField('acInput', 'AC5')" class="flex-1 py-1 rounded bg-slate-800 hover:bg-slate-700 text-xs font-bold">AC5</button>
+                            <button onclick="setField('acInput', 'AC6')" class="flex-1 py-1 rounded bg-slate-800 hover:bg-slate-700 text-xs font-bold">AC6</button>
+                        </div>
+                        <input type="text" id="acInput" value="AC5" oninput="renderCard()"
+                            class="w-full bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1 text-xs font-bold text-center text-white">
+                    </div>
+                </div>
+
+                <!-- ИКОНКА 4: ЭКО БЕЗОПАСНОСТЬ (E1) / ПОЖАРНАЯ БЕЗОПАСНОСТЬ (KM5) / ГАРАНТИЯ -->
+                <div class="bg-slate-950/70 border border-slate-800/80 rounded-xl p-3">
+                    <div class="flex items-center justify-between mb-2">
+                        <label class="text-xs font-medium text-slate-300">4. Эко E1 / Пожарная КМ5 / Гарантия</label>
+                        <div class="flex gap-1 flex-wrap">
+                            <button onclick="setFourthIconPreset('E1')" class="text-[11px] px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 font-semibold">Эко E1</button>
+                            <button onclick="setFourthIconPreset('KM5')" class="text-[11px] px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-500/30 font-semibold">Пожарная КМ5</button>
+                            <button onclick="setFourthIconPreset('WARRANTY25')" class="text-[11px] px-2 py-0.5 rounded bg-sky-500/20 text-sky-300 border border-sky-500/30 font-semibold">Гарантия 25 лет</button>
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-3 gap-2">
+                        <div>
+                            <span class="text-[10px] text-slate-500 block mb-0.5">Верхняя строка 1</span>
+                            <input type="text" id="ecoLine1" value="Класс Эко" oninput="renderCard()" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-2 py-1 text-xs text-white">
+                        </div>
+                        <div>
+                            <span class="text-[10px] text-slate-500 block mb-0.5">Верхняя строка 2</span>
+                            <input type="text" id="ecoLine2" value="Безопасности" oninput="renderCard()" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-2 py-1 text-xs text-white">
+                        </div>
+                        <div>
+                            <span class="text-[10px] text-slate-500 block mb-0.5">Крупно внутри капли</span>
+                            <input type="text" id="ecoValue" value="E1" oninput="renderCard()" class="w-full bg-slate-900 border border-emerald-600/60 rounded-lg px-2 py-1 text-xs font-bold text-emerald-400 text-center">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ИКОНКА 5: ВЛАГОСТОЙКОСТЬ И ЧАСЫ (24 / 48 / 72 / 100 часов) -->
+                <div class="bg-slate-950/70 border border-slate-800/80 rounded-xl p-3">
+                    <div class="flex items-center justify-between mb-2">
+                        <label class="text-xs font-medium text-slate-300">5. Влагостойкость / Водостойкость (часы)</label>
+                        <div class="flex gap-1 flex-wrap">
+                            <button onclick="setWaterPreset('std')" class="text-[11px] px-2 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-slate-200">Стандарт</button>
+                            <button onclick="setWaterPreset('24')" class="text-[11px] px-2 py-0.5 rounded bg-sky-500/20 text-sky-300 border border-sky-500/30 font-semibold">24ч</button>
+                            <button onclick="setWaterPreset('48')" class="text-[11px] px-2 py-0.5 rounded bg-sky-500/20 text-sky-300 border border-sky-500/30 font-semibold">48ч</button>
+                            <button onclick="setWaterPreset('72')" class="text-[11px] px-2 py-0.5 rounded bg-sky-500/20 text-sky-300 border border-sky-500/30 font-semibold">72ч</button>
+                            <button onclick="setWaterPreset('100')" class="text-[11px] px-2 py-0.5 rounded bg-sky-500/20 text-sky-300 border border-sky-500/30 font-semibold">100ч</button>
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-3 gap-2">
+                        <div>
+                            <span class="text-[10px] text-slate-500 block mb-0.5">Подпись снизу (стр. 1)</span>
+                            <input type="text" id="waterBottom1" value="Влагостойкий" oninput="renderCard()" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-2 py-1 text-xs text-white">
+                        </div>
+                        <div>
+                            <span class="text-[10px] text-slate-500 block mb-0.5">Часы снизу (стр. 2)</span>
+                            <input type="text" id="waterBottom2" value="" placeholder="напр. 72 часа" oninput="renderCard()" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-2 py-1 text-xs text-sky-300">
+                        </div>
+                        <div>
+                            <span class="text-[10px] text-slate-500 block mb-0.5">Бейдж на капле (опц.)</span>
+                            <input type="text" id="waterBadge" value="" placeholder="напр. 72ч" oninput="renderCard()" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-2 py-1 text-xs text-center text-sky-300 font-bold">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ИКОНКА 6 (ФАСКА) И ИКОНКА 7 (ЗАМОК) -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <!-- Иконка 6: Фаска и выбор шаблона -->
+                    <div class="bg-slate-950/70 border border-slate-800/80 rounded-xl p-3">
+                        <label class="text-xs font-medium text-slate-300 block mb-1.5">6. Наличие фаски (Выбор шаблона)</label>
+                        <div class="grid grid-cols-2 gap-1.5 mb-2">
+                            <button id="btnBevelNo" onclick="setBevelMode(false)" class="py-1.5 px-2 rounded-lg text-xs font-semibold border transition">
+                                Без Фаски (Шабл. 1)
+                            </button>
+                            <button id="btnBevelYes" onclick="setBevelMode(true)" class="py-1.5 px-2 rounded-lg text-xs font-semibold border transition">
+                                С фаской V4 (Шабл. 2)
+                            </button>
+                        </div>
+                        <div class="grid grid-cols-2 gap-1.5">
+                            <input type="text" id="bevelLabelInput" value="С фаской" oninput="renderCard()" title="Текст над иконкой"
+                                class="bg-slate-900 border border-slate-700 rounded-lg px-2 py-1 text-xs text-white">
+                            <input type="text" id="bevelInnerInput" value="V4" oninput="renderCard()" title="Индекс внутри иконки фаски"
+                                class="bg-slate-900 border border-slate-700 rounded-lg px-2 py-1 text-xs font-bold text-center text-amber-300">
+                        </div>
+                    </div>
+
+                    <!-- Иконка 7: Замковая система и верхние бейджи -->
+                    <div class="bg-slate-950/70 border border-slate-800/80 rounded-xl p-3 flex flex-col justify-between">
+                        <div>
+                            <label class="text-xs font-medium text-slate-300 block mb-1.5">7. Замковая система</label>
+                            <div class="flex gap-1 mb-2">
+                                <button onclick="setField('lockInput', 'CLIC it')" class="flex-1 py-1 rounded bg-slate-800 hover:bg-slate-700 text-[11px] font-bold">CLIC it</button>
+                                <button onclick="setField('lockInput', 'UNI fit!')" class="flex-1 py-1 rounded bg-slate-800 hover:bg-slate-700 text-[11px] font-bold">UNI fit!</button>
+                                <button onclick="setField('lockInput', 'Just Click!')" class="flex-1 py-1 rounded bg-slate-800 hover:bg-slate-700 text-[11px] font-bold">Just Click!</button>
+                            </div>
+                            <input type="text" id="lockInput" value="CLIC it" oninput="renderCard()"
+                                class="w-full bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1 text-xs font-bold text-center text-white">
+                        </div>
+
+                        <div class="flex items-center justify-between pt-2 mt-2 border-t border-slate-800/80 text-[11px] text-slate-400">
+                            <label class="flex items-center gap-1 cursor-pointer">
+                                <input type="checkbox" id="showTopLogo" checked onchange="renderCard()" class="rounded bg-slate-800 border-slate-700 text-amber-500">
+                                <span>Лого ЭГГЕР</span>
+                            </label>
+                            <label class="flex items-center gap-1 cursor-pointer">
+                                <input type="checkbox" id="showMadeIn" checked onchange="renderCard()" class="rounded bg-slate-800 border-slate-700 text-amber-500">
+                                <span>Сделано в России</span>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+        <!-- ПРАВАЯ КОЛОНКА: ИНТЕРАКТИВНОЕ ПРЕВЬЮ ХОЛСТА 1000x1000 (7 колонок) -->
+        <div class="lg:col-span-7 flex flex-col items-center">
+            <div class="w-full bg-slate-900 border border-slate-800 rounded-2xl p-4 shadow-2xl">
+                <!-- Верхний бар над холстом -->
+                <div class="flex flex-wrap items-center justify-between gap-2 mb-3">
+                    <div class="flex items-center gap-2">
+                        <span class="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse"></span>
+                        <span class="text-xs font-semibold text-slate-200">Живое превью (1000 × 1000 px)</span>
+                        <span id="activeTemplateIndicator" class="text-[11px] px-2 py-0.5 rounded bg-slate-800 text-amber-300 border border-slate-700">Шаблон 2 (С фаской V4)</span>
+                    </div>
+
+                    <div class="flex items-center gap-2">
+                        <label class="flex items-center gap-1.5 text-xs text-slate-400 cursor-pointer select-none bg-slate-950 px-2.5 py-1 rounded-lg border border-slate-800">
+                            <input type="checkbox" id="debugMasksToggle" onchange="renderCard()" class="rounded bg-slate-800 border-slate-700 text-amber-500">
+                            <span>Показать зоны замены текста</span>
+                        </label>
+                        <button onclick="downloadCurrentCard()" class="px-3 py-1 rounded-lg bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs flex items-center gap-1 transition">
+                            <i class="ph-bold ph-DownloadSimple"></i> Скачать <span id="downloadFilenamePreview" class="underline">EHL032 Дуб Альвадос.png</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- КОНТЕЙНЕР ХОЛСТА -->
+                <div class="relative w-full aspect-square max-w-[740px] mx-auto rounded-xl overflow-hidden border border-slate-700/80 checkerboard shadow-inner flex items-center justify-center">
+                    <canvas id="cardCanvas" width="1000" height="1000" class="w-full h-full object-contain block"></canvas>
+                </div>
+
+                <!-- Подсказка под холстом -->
+                <div class="mt-3 flex flex-wrap items-center justify-between gap-2 text-xs text-slate-400 px-1">
+                    <div class="flex items-center gap-1.5">
+                        <i class="ph-fill ph-CheckCircle text-emerald-400"></i>
+                        <span>При скачивании сохраняется в полном размере <strong>1000×1000 px PNG</strong> без потери качества.</span>
+                    </div>
+                    <button onclick="copyCanvasToClipboard()" class="text-slate-300 hover:text-amber-400 flex items-center gap-1 transition">
+                        <i class="ph-bold ph-Copy"></i> Скопировать картинку в буфер
+                    </button>
+                </div>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- МОДАЛЬНОЕ ОКНО 1: УПРАВЛЕНИЕ ШАБЛОНАМИ PNG И ЛОКАЛЬНЫМИ ШРИФТАМИ TTF -->
+    <div id="templateModal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-slate-900 border border-slate-700 rounded-2xl max-w-2xl w-full p-6 shadow-2xl space-y-5 max-h-[90vh] overflow-y-auto">
+            <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+                <div class="flex items-center gap-2.5">
+                    <i class="ph-fill ph-Stack text-amber-400 text-2xl"></i>
+                    <div>
+                        <h3 class="font-bold text-base text-white">Привязка твоих файлов «Шаблон 1.png», «Шаблон 2.png» и шрифтов</h3>
+                        <p class="text-xs text-slate-400">Загрузи их один раз — они сохранятся в памяти твоего браузера навсегда</p>
+                    </div>
+                </div>
+                <button onclick="closeTemplateModal()" class="text-slate-400 hover:text-white p-1">
+                    <i class="ph-bold ph-X text-xl"></i>
+                </button>
+            </div>
+
+            <div class="bg-amber-500/10 border border-amber-500/30 rounded-xl p-3.5 text-xs text-amber-200 leading-relaxed">
+                <strong>Как это работает:</strong> В приложение уже встроен точный векторный шаблон ЭГГЕР, поэтому оно работает сразу. Но если ты выберешь здесь свои файлы <code class="bg-slate-950 px-1.5 py-0.5 rounded">Шаблон 1.png</code> и <code class="bg-slate-950 px-1.5 py-0.5 rounded">Шаблон 2.png</code> (или положишь их рядом с <code class="bg-slate-950 px-1.5 py-0.5 rounded">index.html</code> на GitHub), генератор будет накладывать именно твои оригинальные PNG-файлы, аккуратно закрашивая старые надписи кремовым цветом <code class="bg-slate-950 px-1 py-0.5 rounded">#F4F3EA</code> и вписывая новые!
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <!-- Загрузка Шаблона 1 (Без Фаски) -->
+                <div class="bg-slate-950 border border-slate-800 rounded-xl p-4 flex flex-col justify-between">
+                    <div>
+                        <div class="flex items-center justify-between mb-1">
+                            <span class="text-xs font-bold text-white">Шаблон 1.png (Без Фаски)</span>
+                            <span id="tpl1Badge" class="text-[10px] px-1.5 py-0.5 rounded bg-slate-800 text-slate-400">Встроенный</span>
+                        </div>
+                        <p class="text-[11px] text-slate-400 mb-3">Используется автоматически, когда выбран режим «Без Фаски».</p>
+                    </div>
+                    <label class="cursor-pointer py-2 px-3 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 text-xs font-semibold text-center text-amber-300 transition block">
+                        <i class="ph-bold ph-UploadSimple mr-1"></i> Выбрать Шаблон 1.png
+                        <input type="file" accept="image/png" class="hidden" onchange="uploadCustomTemplate(1, event)">
+                    </label>
+                </div>
+
+                <!-- Загрузка Шаблона 2 (С Фаской) -->
+                <div class="bg-slate-950 border border-slate-800 rounded-xl p-4 flex flex-col justify-between">
+                    <div>
+                        <div class="flex items-center justify-between mb-1">
+                            <span class="text-xs font-bold text-white">Шаблон 2.png (С фаской V4)</span>
+                            <span id="tpl2Badge" class="text-[10px] px-1.5 py-0.5 rounded bg-slate-800 text-slate-400">Встроенный</span>
+                        </div>
+                        <p class="text-[11px] text-slate-400 mb-3">Используется автоматически, когда выбран режим «С фаской».</p>
+                    </div>
+                    <label class="cursor-pointer py-2 px-3 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 text-xs font-semibold text-center text-amber-300 transition block">
+                        <i class="ph-bold ph-UploadSimple mr-1"></i> Выбрать Шаблон 2.png
+                        <input type="file" accept="image/png" class="hidden" onchange="uploadCustomTemplate(2, event)">
+                    </label>
+                </div>
+            </div>
+
+            <!-- Загрузка локальных .ttf шрифтов (опционально) -->
+            <div class="bg-slate-950 border border-slate-800 rounded-xl p-4">
+                <div class="flex items-center justify-between mb-1">
+                    <span class="text-xs font-bold text-white">Локальные файлы шрифтов (.ttf) — опционально</span>
+                    <span id="fontStatusBadge" class="text-[10px] px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-300">Lato подключен</span>
+                </div>
+                <p class="text-[11px] text-slate-400 mb-3">Шрифты <code class="text-slate-300">Lato Black Italic</code> и <code class="text-slate-300">Lato Bold</code> уже загружены. Если хочешь подгрузить свои файлы <code class="text-slate-300">.ttf</code> с компьютера для 100% офлайн-работы, выбери их здесь:</p>
+                <div class="flex flex-wrap gap-2">
+                    <label class="cursor-pointer py-1.5 px-3 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 text-xs text-slate-200 transition">
+                        <i class="ph-bold ph-TextAa mr-1 text-amber-400"></i> Загрузить Lato-BlackItalic.ttf / Lato-Bold.ttf
+                        <input type="file" accept=".ttf,.otf" multiple class="hidden" onchange="uploadCustomFonts(event)">
+                    </label>
+                    <button onclick="clearSavedTemplates()" class="py-1.5 px-3 rounded-lg bg-rose-500/15 hover:bg-rose-500/25 text-rose-300 border border-rose-500/30 text-xs transition ml-auto">
+                        Сбросить сохраненные шаблоны
+                    </button>
+                </div>
+            </div>
+
+            <div class="flex justify-end pt-2">
+                <button onclick="closeTemplateModal()" class="px-5 py-2 rounded-xl bg-amber-500 text-slate-950 font-bold text-xs sm:text-sm">Готово</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- МОДАЛЬНОЕ ОКНО 2: ИНСТРУКЦИЯ ПО ЗАЛИВКЕ НА GITHUB PAGES -->
+    <div id="githubModal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-slate-900 border border-slate-700 rounded-2xl max-w-2xl w-full p-6 shadow-2xl space-y-4 max-h-[90vh] overflow-y-auto">
+            <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+                <div class="flex items-center gap-2.5">
+                    <i class="ph-bold ph-GithubLogo text-indigo-400 text-2xl"></i>
+                    <div>
+                        <h3 class="font-bold text-base text-white">Как залить этот генератор на твой GitHub Pages за 1 минуту</h3>
+                        <p class="text-xs text-slate-400">Чтобы открывать его по постоянной ссылке с любого компьютера или телефона</p>
+                    </div>
+                </div>
+                <button onclick="closeGithubModal()" class="text-slate-400 hover:text-white p-1">
+                    <i class="ph-bold ph-X text-xl"></i>
+                </button>
+            </div>
+
+            <ol class="space-y-3 text-xs sm:text-sm text-slate-300 list-decimal list-inside leading-relaxed">
+                <li class="bg-slate-950 p-3 rounded-xl border border-slate-800">
+                    Зайди на <a href="https://github.com/new" target="_blank" class="text-amber-400 underline font-medium">github.com/new</a> и создай новый публичный репозиторий (например, <code class="text-amber-300 bg-slate-900 px-1.5 py-0.5 rounded">card-generator</code>).
+                </li>
+                <li class="bg-slate-950 p-3 rounded-xl border border-slate-800">
+                    Сохрани код этого приложения в файл <code class="text-amber-300 bg-slate-900 px-1.5 py-0.5 rounded">index.html</code>. Рядом с ним в эту же папку положи свои файлы:
+                    <ul class="list-disc list-inside mt-1.5 text-xs text-slate-400 space-y-1 ml-2">
+                        <li><code class="text-slate-200">Шаблон 1.png</code> (и/или переименуй в <code class="text-slate-200">template_no_bevel.png</code>)</li>
+                        <li><code class="text-slate-200">Шаблон 2.png</code> (и/или переименуй в <code class="text-slate-200">template_bevel.png</code>)</li>
+                        <li>Свои файлы шрифта <code class="text-slate-200">Lato-BlackItalic.ttf</code> и <code class="text-slate-200">Lato-Bold.ttf</code></li>
+                    </ul>
+                    <p class="text-[11px] text-emerald-400 mt-1.5">Скрипт при открытии страницы сам проверит наличие этих файлов в папке репозитория и автоматически подгрузит их!</p>
+                </li>
+                <li class="bg-slate-950 p-3 rounded-xl border border-slate-800">
+                    В репозитории нажми <strong>Add file → Upload files</strong>, перетащи туда эти файлы и нажми зеленую кнопку <strong>Commit changes</strong>.
+                </li>
+                <li class="bg-slate-950 p-3 rounded-xl border border-slate-800">
+                    Перейди во вкладку <strong>Settings → Pages</strong> (слева в меню), в разделе <strong>Branch</strong> выбери <code class="text-amber-300">main</code> и нажми <strong>Save</strong>. Через 30 секунд у тебя появится твоя личная рабочая ссылка вида <code class="text-emerald-300">https://твой-логин.github.io/card-generator/</code>.
+                </li>
+            </ol>
+
+            <div class="flex justify-end pt-2">
+                <button onclick="closeGithubModal()" class="px-5 py-2 rounded-xl bg-indigo-500 hover:bg-indigo-400 text-white font-bold text-xs sm:text-sm">Понятно!</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ВСПЛЫВАЮЩЕЕ УВЕДОМЛЕНИЕ (ВМЕСТО ALERT) -->
+    <div id="toastBox" class="fixed bottom-5 right-5 z-50 hidden transform transition-all duration-300">
+        <div class="bg-slate-900 border border-amber-500/40 text-slate-100 px-4 py-3 rounded-xl shadow-2xl flex items-center gap-2.5 text-xs sm:text-sm">
+            <i class="ph-fill ph-Info text-amber-400 text-lg"></i>
+            <span id="toastMessage">Готово</span>
+        </div>
+    </div>
+
+    <script>
+        // ============================================================================
+        // ГЛОБАЛЬНОЕ СОСТОЯНИЕ ГЕНЕРАТОРА
+        // ============================================================================
+        const state = {
+            hasBevel: true,               // По умолчанию для EHL032 Дуб Альвадос: Фаска - Да (Шаблон 2)
+            decorImage: null,             // Текущее изображение текстуры дерева
+            template1Image: null,         // Пользовательский Шаблон 1.png (Без фаски)
+            template2Image: null,         // Пользовательский Шаблон 2.png (С фаской)
+            photoQueue: [],               // Очередь загруженных текстур [{ name, title, img, dataUrl }]
+            activeQueueIndex: -1
+        };
+
+        // ============================================================================
+        // ИНИЦИАЛИЗАЦИЯ И АВТОПОДГРУЗКА ШАБЛОНОВ ИЗ LOCALSTORAGE / РЕПОЗИТОРИЯ GITHUB
+        // ============================================================================
+        window.addEventListener('DOMContentLoaded', async () => {
+            setupDragAndDrop();
+            updateBevelButtonsUI();
+
+            // 1. Создаем реалистичную дефолтную текстуру дуба (как на EHL039 Дуб паркетный),
+            // чтобы карточка выглядела на 100% готовой сразу при открытии
+            state.decorImage = createProceduralOakTexture();
+
+            // 2. Пробуем загрузить сохраненные шаблоны из localStorage или напрямую из папки GitHub Pages
+            await tryLoadTemplates();
+
+            // 3. Дожидаемся полной загрузки веб-шрифтов Lato и отрисовываем холст
+            if (document.fonts && document.fonts.ready) {
+                await document.fonts.ready;
+            }
+            renderCard();
+            setTimeout(renderCard, 350); // Повторный рендер после стабилизации глифов Lato
+        });
+
+        // Автоматическая загрузка шаблонов и локальных шрифтов из папки GitHub Pages или localStorage
+        async function tryLoadTemplates() {
+            // Сначала проверяем localStorage
+            const savedTpl1 = localStorage.getItem('egger_tpl_1');
+            const savedTpl2 = localStorage.getItem('egger_tpl_2');
+
+            if (savedTpl1) {
+                state.template1Image = await loadImageFromSrc(savedTpl1);
+                updateTemplateBadge(1, 'Загружен PNG');
+            } else {
+                // Пробуем подтянуть из этой же папки на GitHub Pages
+                for (const path of ['./Шаблон 1.png', './template_no_bevel.png']) {
+                    const img = await tryFetchImage(path);
+                    if (img) {
+                        state.template1Image = img;
+                        updateTemplateBadge(1, 'Из папки репо');
+                        break;
+                    }
+                }
+            }
+
+            if (savedTpl2) {
+                state.template2Image = await loadImageFromSrc(savedTpl2);
+                updateTemplateBadge(2, 'Загружен PNG');
+            } else {
+                for (const path of ['./Шаблон 2.png', './template_bevel.png']) {
+                    const img = await tryFetchImage(path);
+                    if (img) {
+                        state.template2Image = img;
+                        updateTemplateBadge(2, 'Из папки репо');
+                        break;
+                    }
+                }
+            }
+
+            // Попытка подхватить локальные .ttf из папки репозитория, если они там лежат
+            tryLoadRepoFont('Lato', './Lato-BlackItalic.ttf', { weight: '900', style: 'italic' });
+            tryLoadRepoFont('Lato', './Lato-Bold.ttf', { weight: '700', style: 'normal' });
+            tryLoadRepoFont('Lato', './Lato-BoldItalic.ttf', { weight: '700', style: 'italic' });
+            tryLoadRepoFont('Lato', './Lato-Regular.ttf', { weight: '400', style: 'normal' });
+        }
+
+        async function tryLoadRepoFont(family, url, descriptors) {
+            try {
+                const res = await fetch(url, { method: 'HEAD' });
+                if (res.ok) {
+                    const font = new FontFace(family, `url(${encodeURI(url)})`, descriptors);
+                    const loaded = await font.load();
+                    document.fonts.add(loaded);
+                    renderCard();
+                }
+            } catch (e) {
+                // Игнорируем, если локального файла нет рядом — работает Google Fonts Lato
+            }
+        }
+
+        function loadImageFromSrc(src) {
+            return new Promise((resolve) => {
+                const img = new Image();
+                img.crossOrigin = 'anonymous';
+                img.onload = () => resolve(img);
+                img.onerror = () => resolve(null);
+                img.src = src;
+            });
+        }
+
+        async function tryFetchImage(url) {
+            try {
+                const res = await fetch(url);
+                if (!res.ok) return null;
+                const blob = await res.blob();
+                const objUrl = URL.createObjectURL(blob);
+                return await loadImageFromSrc(objUrl);
+            } catch {
+                return null;
+            }
+        }
+
+        // Генерация реалистичной текстуры светлого дубового ламината по умолчанию
+        function createProceduralOakTexture() {
+            const c = document.createElement('canvas');
+            c.width = 1000;
+            c.height = 1000;
+            const ctx = c.getContext('2d');
+
+            // Базовый теплый дубовый тон (как на EHL039 Дуб паркетный)
+            ctx.fillStyle = '#C8B598';
+            ctx.fillRect(0, 0, 1000, 1000);
+
+            // Вертикальные плашки ламината
+            const plankWidths = [160, 210, 210, 210, 210];
+            let curX = 0;
+            plankWidths.forEach((w, idx) => {
+                const nextX = curX + w;
+                // Легкая вариация оттенка доски
+                const toneShift = (idx % 2 === 0) ? 6 : -5;
+                ctx.fillStyle = `rgb(${200 + toneShift}, ${181 + toneShift}, ${152 + toneShift})`;
+                ctx.fillRect(curX, 0, w, 1000);
+
+                // Продольные волокна древесины
+                for (let i = 0; i < 180; i++) {
+                    const x = curX + (Math.sin(i * 19.3 + idx) * 0.5 + 0.5) * w;
+                    ctx.strokeStyle = i % 3 === 0 ? 'rgba(135, 112, 84, 0.16)' : 'rgba(230, 215, 192, 0.14)';
+                    ctx.lineWidth = 1 + (i % 3);
+                    ctx.beginPath();
+                    ctx.moveTo(x, 0);
+                    ctx.bezierCurveTo(x + Math.sin(i) * 12, 330, x - Math.cos(i) * 12, 660, x, 1000);
+                    ctx.stroke();
+                }
+
+                // Стыки досок по вертикали и горизонтали
+                ctx.strokeStyle = 'rgba(105, 86, 64, 0.45)';
+                ctx.lineWidth = 1.5;
+                ctx.beginPath();
+                ctx.moveTo(nextX, 0);
+                ctx.lineTo(nextX, 1000);
+                ctx.stroke();
+
+                const jointY = [180, 720, 460, 290, 840][idx];
+                ctx.beginPath();
+                ctx.moveTo(curX, jointY);
+                ctx.lineTo(nextX, jointY);
+                ctx.stroke();
+
+                curX = nextX;
+            });
+
+            return c;
+        }
+
+        // ============================================================================
+        // ОСНОВНОЙ РЕНДЕР КАРТОЧКИ 1000x1000 PX НА CANVAS
+        // ============================================================================
+        function renderCard() {
+            const canvas = document.getElementById('cardCanvas');
+            const ctx = canvas.getContext('2d');
+            const W = 1000, H = 1000;
+
+            ctx.clearRect(0, 0, W, H);
+
+            // 1. РИСУЕМ ФОНОВУЮ ТЕКСТУРУ ДЕКОРА (Center-Crop 1000x1000)
+            if (state.decorImage) {
+                drawImageCover(ctx, state.decorImage, 0, 0, W, H);
+            }
+
+            // 2. ВЫБИРАЕМ НУЖНЫЙ ШАБЛОН (Шаблон 2 если с фаской, Шаблон 1 если без фаски)
+            const activeTemplateImg = state.hasBevel ? state.template2Image : state.template1Image;
+
+            if (activeTemplateImg) {
+                // Отрисовываем загруженный пользователем PNG-шаблон
+                ctx.drawImage(activeTemplateImg, 0, 0, W, H);
+
+                // Маскируем (очищаем кремовым цветом #F4F3EA) старые запеченные в шаблон надписи,
+                // не задевая темно-синие контуры капель и голубую каплю воды
+                maskBakedTemplateText(ctx, state.hasBevel);
+            } else {
+                // Если PNG-шаблон еще не загружен, рисуем точный векторный шаблон ЭГГЕР 1:1
+                drawVectorEggerTemplate(ctx, state.hasBevel);
+            }
+
+            // 3. НАКЛАДЫВАЕМ ДИНАМИЧЕСКИЙ ТЕКСТ ШРИФТОМ LATO ПО ТОЧНЫМ КООРДИНАТАМ
+            drawDynamicTexts(ctx);
+
+            // 4. Обновляем UI-индикаторы
+            const titleVal = (document.getElementById('titleInput').value || 'Карточка').trim();
+            document.getElementById('downloadFilenamePreview').textContent = `${titleVal}.png`;
+            document.getElementById('activeTemplateIndicator').textContent = state.hasBevel
+                ? 'Шаблон 2 (С фаской)'
+                : 'Шаблон 1 (Без Фаски)';
+        }
+
+        // Закраска старого текста на пользовательских PNG-шаблонах (Шаблон 1.png / Шаблон 2.png)
+        function maskBakedTemplateText(ctx, hasBevel) {
+            const debug = document.getElementById('debugMasksToggle').checked;
+            const creamColor = '#F4F3EA';
+
+            // Выверенные до пикселя прямоугольники старого текста на шаблонах 1000x1000
+            const masks = [
+                // Заголовок "EHL135 Дуб Репино"
+                { x: 160, y: 804, w: 680, h: 43 },
+
+                // Иконка 1 (Толщина): текст "8 мм" внутри над стрелкой (стрелка лежит на y: 903..930)
+                { x: 75, y: 873, w: 70, h: 28 },
+                // Иконка 1: нижняя подпись "Толщина / 8мм"
+                { x: 42, y: 952, w: 126, h: 45 },
+
+                // Иконка 2 (Класс нагрузки): верхняя подпись "Класс Нагрузки / 32-33 Класс"
+                { x: 168, y: 856, w: 146, h: 42 },
+                // Иконка 2: текст внутри капли "32/33 / КЛАСС"
+                { x: 196, y: 912, w: 72, h: 60 },
+
+                // Иконка 3 (AC4/AC5): внутри капли
+                { x: 327, y: 882, w: 76, h: 44 },
+                // Иконка 3: нижняя подпись "Износостойкость / AC4-5 Класс"
+                { x: 292, y: 950, w: 158, h: 46 },
+
+                // Иконка 4 (Эко E1 / КМ5): верхняя подпись "Класс Эко / Безопасности"
+                { x: 446, y: 856, w: 132, h: 42 },
+                // Иконка 4: зеленый текст "E1" внутри капли
+                { x: 470, y: 915, w: 72, h: 62 },
+
+                // Иконка 5 (Влагостойкий): нижняя подпись
+                { x: 575, y: 954, w: 146, h: 43 },
+
+                // Иконка 6 (Фаска): верхняя подпись "Без Фаски" / "С фаской"
+                { x: 722, y: 864, w: 116, h: 31 },
+
+                // Иконка 7 (CLIC it): нижняя подпись
+                { x: 855, y: 955, w: 118, h: 40 }
+            ];
+
+            // Если включен Шаблон 2 (С фаской), маскируем также индекс "V4" внутри иконки, чтобы писать свой
+            if (hasBevel) {
+                masks.push({ x: 755, y: 912, w: 42, h: 29 });
+            }
+
+            masks.forEach(m => {
+                ctx.fillStyle = creamColor;
+                ctx.fillRect(m.x, m.y, m.w, m.h);
+                if (debug) {
+                    ctx.strokeStyle = 'rgba(239, 68, 68, 0.75)';
+                    ctx.lineWidth = 1.5;
+                    ctx.strokeRect(m.x, m.y, m.w, m.h);
+                }
+            });
+        }
+
+        // Отрисовка всех текстов поверх плашки шрифтом Lato
+        function drawDynamicTexts(ctx) {
+            const darkBlue = '#18354A';
+            const ecoGreen = '#0D7A11';
+
+            const title = document.getElementById('titleInput').value.trim();
+            const thickness = document.getElementById('thicknessInput').value.trim() || '8';
+            const loadClass = document.getElementById('loadClassInput').value.trim() || '33';
+            const acRating = document.getElementById('acInput').value.trim() || 'AC5';
+
+            const ecoLine1 = document.getElementById('ecoLine1').value.trim();
+            const ecoLine2 = document.getElementById('ecoLine2').value.trim();
+            const ecoValue = document.getElementById('ecoValue').value.trim();
+
+            const waterBottom1 = document.getElementById('waterBottom1').value.trim();
+            const waterBottom2 = document.getElementById('waterBottom2').value.trim();
+            const waterBadge = document.getElementById('waterBadge').value.trim();
+
+            const bevelLabel = document.getElementById('bevelLabelInput').value.trim();
+            const bevelInner = document.getElementById('bevelInnerInput').value.trim();
+            const lockName = document.getElementById('lockInput').value.trim();
+
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+
+            // 1. ЦЕНТРАЛЬНЫЙ ЗАГОЛОВОК (Lato Black Italic)
+            ctx.fillStyle = darkBlue;
+            ctx.font = 'italic 900 38px "Lato", sans-serif';
+            ctx.fillText(title, 500, 825);
+
+            // 2. ИКОНКА 1: ТОЛЩИНА
+            // Внутри капли над стрелкой: "8 мм"
+            ctx.font = 'italic 900 25px "Lato", sans-serif';
+            ctx.fillText(`${thickness} мм`, 110, 890);
+
+            // Под каплей: "Толщина" / "8мм"
+            ctx.font = 'italic 900 18.5px "Lato", sans-serif';
+            ctx.fillText('Толщина', 104, 964);
+            ctx.fillText(`${thickness}мм`, 104, 985);
+
+            // 3. ИКОНКА 2: КЛАСС НАГРУЗКИ
+            // Над каплей: "Класс Нагрузки" / "33 Класс"
+            ctx.font = 'italic 900 18px "Lato", sans-serif';
+            ctx.fillText('Класс Нагрузки', 242, 868);
+            ctx.fillText(`${loadClass} Класс`, 242, 889);
+
+            // Внутри капли: "33" и "КЛАСС"
+            ctx.font = 'normal 700 34px "Lato", sans-serif';
+            ctx.fillText(loadClass, 230, 932);
+            ctx.font = 'normal 400 18px "Lato", sans-serif';
+            ctx.fillText('КЛАСС', 231, 958);
+
+            // 4. ИКОНКА 3: ИЗНОСОСТОЙКОСТЬ (AC4 / AC5)
+            // Внутри капли: "AC5"
+            ctx.font = 'normal 700 34px "Lato", sans-serif';
+            ctx.fillText(acRating, 365, 905);
+
+            // Под каплей: "Износостойкость" / "AC5 Класс"
+            ctx.font = 'italic 900 18.5px "Lato", sans-serif';
+            ctx.fillText('Износостойкость', 371, 962);
+            ctx.fillText(`${acRating} Класс`, 371, 984);
+
+            // 5. ИКОНКА 4: ЭКО БЕЗОПАСНОСТЬ (E1) / ПОЖАРНАЯ (KM5) / ГАРАНТИЯ
+            ctx.fillStyle = darkBlue;
+            ctx.font = 'italic 900 18px "Lato", sans-serif';
+            ctx.fillText(ecoLine1, 512, 868);
+            ctx.fillText(ecoLine2, 512, 889);
+
+            // Внутри капли зеленым цветом (#0D7A11)
+            ctx.fillStyle = ecoGreen;
+            if (ecoValue.length <= 2) {
+                ctx.font = 'normal 900 50px "Lato", sans-serif';
+                ctx.fillText(ecoValue, 507, 947);
+            } else if (ecoValue.length <= 4) {
+                ctx.font = 'normal 900 30px "Lato", sans-serif';
+                ctx.fillText(ecoValue, 505, 947);
+            } else {
+                // Например "25 лет" в 2 строки или компактно
+                const parts = ecoValue.split(' ');
+                if (parts.length === 2) {
+                    ctx.font = 'normal 900 30px "Lato", sans-serif';
+                    ctx.fillText(parts[0], 505, 935);
+                    ctx.font = 'normal 700 18px "Lato", sans-serif';
+                    ctx.fillText(parts[1], 505, 960);
+                } else {
+                    ctx.font = 'normal 900 22px "Lato", sans-serif';
+                    ctx.fillText(ecoValue, 505, 947);
+                }
+            }
+
+            // 6. ИКОНКА 5: ВЛАГОСТОЙКОСТЬ + ЧАСЫ (24/48/72/100 ч)
+            ctx.fillStyle = darkBlue;
+            ctx.font = 'italic 900 18.5px "Lato", sans-serif';
+            if (waterBottom2) {
+                ctx.fillText(waterBottom1, 648, 963);
+                ctx.fillStyle = '#0369A1';
+                ctx.fillText(waterBottom2, 648, 985);
+            } else {
+                ctx.fillText(waterBottom1, 648, 970);
+            }
+
+            // Если указан часовой бейдж (например "24ч", "48ч", "72ч", "100ч")
+            if (waterBadge) {
+                // Аккуратная плашка над каплей с часами водостойкости
+                ctx.save();
+                ctx.fillStyle = '#0096D6';
+                drawRoundedRect(ctx, 602, 830, 92, 23, 8);
+                ctx.fill();
+                ctx.fillStyle = '#FFFFFF';
+                ctx.font = 'italic 900 14.5px "Lato", sans-serif';
+                ctx.fillText(`Защита ${waterBadge}`, 648, 842);
+                ctx.restore();
+            }
+
+            // 7. ИКОНКА 6: ФАСКА (С фаской V4 / Без Фаски)
+            ctx.fillStyle = darkBlue;
+            ctx.font = 'italic 900 18.5px "Lato", sans-serif';
+            ctx.fillText(bevelLabel, 780, 882);
+
+            if (state.hasBevel && bevelInner) {
+                // В Шаблоне 2 рисуем "V" крупнее и "4" чуть меньше, один в один как в оригинале
+                ctx.fillStyle = darkBlue;
+                if (bevelInner.toUpperCase() === 'V4') {
+                    ctx.font = 'normal 700 31px "Lato", sans-serif';
+                    ctx.fillText('V', 769, 928);
+                    ctx.font = 'normal 700 23px "Lato", sans-serif';
+                    ctx.fillText('4', 786, 931);
+                } else {
+                    ctx.font = 'normal 700 26px "Lato", sans-serif';
+                    ctx.fillText(bevelInner, 776, 928);
+                }
+            }
+
+            // 8. ИКОНКА 7: ЗАМКОВОЕ СОЕДИНЕНИЕ (CLIC it)
+            ctx.fillStyle = darkBlue;
+            ctx.font = 'italic 900 18.5px "Lato", sans-serif';
+            ctx.fillText(lockName, 914, 970);
+        }
+
+        // ============================================================================
+        // ВСТРОЕННЫЙ ВЕКТОРНЫЙ РЕНДЕР ШАБЛОНА ЭГГЕР (ДЛЯ РАБОТЫ БЕЗ ВНЕШНИХ PNG)
+        // ============================================================================
+        function drawVectorEggerTemplate(ctx, hasBevel) {
+            const cream = '#F4F3EA';
+            const yellow = '#F3C95B';
+            const darkBlue = '#18354A';
+
+            // 1. ВЕРХНИЙ ЛЕВЫЙ БЕЙДЖ "ЭГГЕР"
+            if (document.getElementById('showTopLogo').checked) {
+                ctx.save();
+                ctx.beginPath();
+                ctx.moveTo(0, 0);
+                ctx.lineTo(283, 0);
+                ctx.lineTo(283, 42);
+                ctx.quadraticCurveTo(283, 95, 225, 95);
+                ctx.lineTo(58, 95);
+                ctx.quadraticCurveTo(0, 95, 0, 42);
+                ctx.closePath();
+                ctx.fillStyle = cream;
+                ctx.fill();
+                ctx.lineWidth = 4;
+                ctx.strokeStyle = yellow;
+                ctx.stroke();
+
+                // Красная полоса ЭГГЕР
+                ctx.fillStyle = '#F04E45';
+                ctx.fillRect(42, 12, 203, 25);
+
+                // Надпись ЭГГЕР в фирменном геом. стиле
+                ctx.fillStyle = '#2B0908';
+                ctx.font = 'normal 900 42px "Lato", sans-serif';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText('Э Г Г Е Р', 143, 66);
+                ctx.restore();
+            }
+
+            // 2. ПРАВЫЙ БЕЙДЖ "Сделано в России"
+            if (document.getElementById('showMadeIn').checked) {
+                ctx.save();
+                ctx.beginPath();
+                ctx.moveTo(1005, 638);
+                ctx.lineTo(796, 638);
+                ctx.quadraticCurveTo(753, 638, 753, 680);
+                ctx.quadraticCurveTo(753, 721, 796, 721);
+                ctx.lineTo(1005, 721);
+                ctx.closePath();
+                ctx.fillStyle = cream;
+                ctx.fill();
+                ctx.lineWidth = 4;
+                ctx.strokeStyle = yellow;
+                ctx.stroke();
+
+                // Трехцветный знак (Белый / Синий / Красный лепестки)
+                // Белый вертикальный
+                ctx.save();
+                ctx.translate(783, 680);
+                ctx.fillStyle = '#E5E7EB';
+                ctx.beginPath();
+                ctx.ellipse(0, -2, 11, 29, 0, 0, Math.PI * 2);
+                ctx.fill();
+                // Синий диагональный
+                ctx.rotate(0.58);
+                ctx.fillStyle = '#0095FF';
+                ctx.beginPath();
+                ctx.ellipse(8, -2, 12, 29, 0, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.restore();
+
+                // Красный горизонтальный
+                ctx.fillStyle = '#FF0000';
+                ctx.beginPath();
+                ctx.ellipse(809, 699, 32, 13, 0, 0, Math.PI * 2);
+                ctx.fill();
+
+                ctx.fillStyle = '#000000';
+                ctx.textAlign = 'left';
+                ctx.textBaseline = 'middle';
+                ctx.font = 'normal 700 32px "Lato", sans-serif';
+                ctx.fillText('Сделано', 850, 665);
+                ctx.fillText('в России', 850, 697);
+                ctx.restore();
+            }
+
+            // 3. НИЖНЯЯ ИНФОРМАЦИОННАЯ ПЛАШКА (y = 795..1000)
+            ctx.save();
+            ctx.beginPath();
+            ctx.moveTo(0, 1005);
+            ctx.lineTo(0, 880);
+            ctx.quadraticCurveTo(0, 795, 92, 795);
+            ctx.lineTo(908, 795);
+            ctx.quadraticCurveTo(1000, 795, 1000, 880);
+            ctx.lineTo(1000, 1005);
+            ctx.closePath();
+            ctx.fillStyle = cream;
+            ctx.fill();
+            ctx.lineWidth = 8;
+            ctx.strokeStyle = yellow;
+            ctx.stroke();
+            ctx.restore();
+
+            // 4. КОНТУРЫ 7 ИКОНОК-КАПЕЛЬ (Точные координаты с эталона)
+            const drops = [
+                { cx: 109, cy: 902 }, // 1. Толщина
+                { cx: 232, cy: 941 }, // 2. Класс нагрузки
+                { cx: 365, cy: 905 }, // 3. Износостойкость
+                { cx: 505, cy: 945 }, // 4. Эко / КМ5
+                { cx: 648, cy: 901 }, // 5. Влагостойкость
+                { cx: 777, cy: 943 }, // 6. Фаска
+                { cx: 914, cy: 902 }  // 7. Замок
+            ];
+
+            drops.forEach((d, idx) => {
+                drawDropFrame(ctx, d.cx, d.cy, 43, darkBlue);
+
+                // Внутренняя графика для специфических иконок:
+                if (idx === 0) {
+                    // Двусторонняя стрелка под числом толщины (<->)
+                    ctx.save();
+                    ctx.strokeStyle = darkBlue;
+                    ctx.lineWidth = 4.5;
+                    ctx.lineCap = 'round';
+                    ctx.lineJoin = 'round';
+                    ctx.beginPath();
+                    ctx.moveTo(86, 916);
+                    ctx.lineTo(130, 916);
+                    // Левый наконечник
+                    ctx.moveTo(96, 906);
+                    ctx.lineTo(85, 916);
+                    ctx.lineTo(96, 926);
+                    // Правый наконечник
+                    ctx.moveTo(120, 906);
+                    ctx.lineTo(131, 916);
+                    ctx.lineTo(120, 926);
+                    ctx.stroke();
+                    ctx.restore();
+                } else if (idx === 4) {
+                    // Голубая капля с галочкой
+                    ctx.save();
+                    ctx.fillStyle = '#00A8E8';
+                    ctx.beginPath();
+                    ctx.moveTo(648, 865);
+                    ctx.bezierCurveTo(665, 892, 673, 905, 673, 916);
+                    ctx.arc(648, 916, 24, 0, Math.PI, false);
+                    ctx.bezierCurveTo(623, 905, 631, 892, 648, 865);
+                    ctx.fill();
+
+                    // Белая дуга и галочка внутри капли
+                    ctx.strokeStyle = '#FFFFFF';
+                    ctx.lineWidth = 2.8;
+                    ctx.lineCap = 'round';
+                    ctx.lineJoin = 'round';
+                    ctx.beginPath();
+                    ctx.moveTo(640, 913);
+                    ctx.lineTo(647, 920);
+                    ctx.lineTo(662, 903);
+                    ctx.stroke();
+
+                    ctx.beginPath();
+                    ctx.arc(648, 916, 18, 0.3, Math.PI - 0.3);
+                    ctx.stroke();
+                    ctx.restore();
+                } else if (idx === 5) {
+                    // Иконка 6: С фаской V4 или Без Фаски
+                    ctx.save();
+                    ctx.strokeStyle = darkBlue;
+                    if (hasBevel) {
+                        // Контур V-образной фаски между двумя плитами
+                        ctx.lineWidth = 3.2;
+                        ctx.beginPath();
+                        // Левая плита со скосом
+                        ctx.moveTo(737, 935);
+                        ctx.lineTo(754, 935);
+                        ctx.lineTo(774, 959);
+                        ctx.lineTo(774, 971);
+                        ctx.lineTo(741, 971);
+                        // Правая плита со скосом
+                        ctx.moveTo(816, 935);
+                        ctx.lineTo(798, 935);
+                        ctx.lineTo(778, 959);
+                        ctx.lineTo(778, 971);
+                        ctx.lineTo(812, 971);
+                        ctx.stroke();
+                    } else {
+                        // Плоский стык досок с текстурой дерева ("Без Фаски")
+                        ctx.lineWidth = 2;
+                        ctx.beginPath();
+                        ctx.moveTo(738, 947);
+                        ctx.lineTo(815, 947);
+                        ctx.moveTo(740, 960);
+                        ctx.lineTo(813, 960);
+                        ctx.moveTo(777, 903);
+                        ctx.lineTo(777, 947);
+                        ctx.stroke();
+                    }
+                    ctx.restore();
+                } else if (idx === 6) {
+                    // Иконка 7: Замковое соединение CLIC it
+                    ctx.save();
+                    ctx.strokeStyle = darkBlue;
+                    ctx.lineWidth = 2.2;
+                    ctx.lineJoin = 'round';
+                    ctx.beginPath();
+                    // Нижний паз
+                    ctx.moveTo(875, 907);
+                    ctx.lineTo(903, 907);
+                    ctx.lineTo(903, 916);
+                    ctx.lineTo(895, 916);
+                    ctx.lineTo(895, 922);
+                    ctx.lineTo(918, 922);
+                    ctx.lineTo(918, 914);
+                    ctx.lineTo(923, 914);
+                    ctx.lineTo(923, 928);
+                    ctx.lineTo(880, 928);
+                    // Верхний шип под углом
+                    ctx.moveTo(954, 884);
+                    ctx.lineTo(914, 900);
+                    ctx.lineTo(916, 912);
+                    ctx.lineTo(928, 908);
+                    ctx.lineTo(935, 900);
+                    ctx.lineTo(942, 905);
+                    ctx.lineTo(954, 901);
+                    ctx.stroke();
+                    ctx.restore();
+                }
+            });
+        }
+
+        // Отрисовка фирменной каплевидной рамки (круг со скругленным правым верхним углом)
+        function drawDropFrame(ctx, cx, cy, r, color) {
+            ctx.save();
+            ctx.strokeStyle = color;
+            ctx.lineWidth = 6;
+            ctx.lineJoin = 'round';
+            ctx.beginPath();
+            // Дуга от 0 (право) по часовой стрелке до -PI/2 (верх)
+            ctx.arc(cx, cy, r, 0, -Math.PI / 2, false);
+            // Правый верхний острый/скругленный угол капли
+            ctx.lineTo(cx + r - 6, cy - r);
+            ctx.quadraticCurveTo(cx + r, cy - r, cx + r, cy - r + 6);
+            ctx.closePath();
+            ctx.stroke();
+            ctx.restore();
+        }
+
+        function drawRoundedRect(ctx, x, y, w, h, r) {
+            ctx.beginPath();
+            ctx.moveTo(x + r, y);
+            ctx.lineTo(x + w - r, y);
+            ctx.quadraticCurveTo(x + w, y, x + w, y + r);
+            ctx.lineTo(x + w, y + h - r);
+            ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+            ctx.lineTo(x + r, y + h);
+            ctx.quadraticCurveTo(x, y + h, x, y + h - r);
+            ctx.lineTo(x, y + r);
+            ctx.quadraticCurveTo(x, y, x + r, y);
+            ctx.closePath();
+        }
+
+        function drawImageCover(ctx, img, x, y, w, h) {
+            const imgW = img.width || img.naturalWidth;
+            const imgH = img.height || img.naturalHeight;
+            if (!imgW || !imgH) return;
+
+            const scale = Math.max(w / imgW, h / imgH);
+            const nw = imgW * scale;
+            const nh = imgH * scale;
+            const nx = x + (w - nw) / 2;
+            const ny = y + (h - nh) / 2;
+            ctx.drawImage(img, nx, ny, nw, nh);
+        }
+
+        // ============================================================================
+        // УМНЫЙ ЛОКАЛЬНЫЙ ПАРСЕР ТЕКСТА ХАРАКТЕРИСТИК + GEMINI API
+        // ============================================================================
+        function parseRawTextLocally() {
+            const raw = document.getElementById('rawSpecsInput').value.trim();
+            if (!raw) return;
+
+            const lines = raw.split(/\n+/).map(l => l.trim()).filter(Boolean);
+
+            // 1. Поиск артикула и названия декора (первая строка или строка с EHL/EPL/EL/Дуб)
+            const titleLine = lines.find(l => /(EHL|EPL|EL|EDF|H\d+|Дуб|Ясень|Сосна|Орех|Бетон|Камень)/i.test(l) && !/Толщина|Класс|Фаска|Влагостойк|Гарантия|Замков/i.test(l)) || lines[0];
+            if (titleLine) {
+                document.getElementById('titleInput').value = titleLine.replace(/^(Артикул|Декор|Название)\s*[:\-–]\s*/i, '').trim();
+            }
+
+            // 2. Толщина (8 / 10 / 12 мм)
+            const thickMatch = raw.match(/Толщина[^\d\n]*(\d+(?:[.,]\d+)?)\s*мм/i) || raw.match(/\b(7|8|9|10|11|12)\s*мм\b/i);
+            if (thickMatch) {
+                document.getElementById('thicknessInput').value = thickMatch[1].replace(',', '.');
+            }
+
+            // 3. Класс нагрузки (31 / 32 / 33 / 34) и автоматический подбор AC3 / AC4 / AC5 / AC6
+            const classMatch = raw.match(/Класс[^\d\n]*(31|32|33|34)/i) || raw.match(/\b(31|32|33|34)\s*(?:кл|класс)/i);
+            let detectedClass = null;
+            if (classMatch) {
+                detectedClass = classMatch[1];
+                document.getElementById('loadClassInput').value = detectedClass;
+            }
+
+            // 4. Износостойкость (AC3 / AC4 / AC5 / AC6)
+            const acMatch = raw.match(/\b(AC\s*[3456]|АС\s*[3456])\b/i);
+            if (acMatch) {
+                document.getElementById('acInput').value = acMatch[1].toUpperCase().replace('А', 'A').replace('С', 'C').replace(/\s+/g, '');
+            } else if (detectedClass) {
+                const acMap = { '31': 'AC3', '32': 'AC4', '33': 'AC5', '34': 'AC6' };
+                if (acMap[detectedClass]) document.getElementById('acInput').value = acMap[detectedClass];
+            }
+
+            // 5. Наличие фаски
+            if (/Фаска\s*[:\-–]?\s*(Нет|Без\s*фаски)/i.test(raw) || /Без\s+фаски/i.test(raw)) {
+                setBevelMode(false);
+            } else if (/Фаска\s*[:\-–]?\s*(Да|Есть|4V|V4|С\s*фаской)/i.test(raw) || /\b(4V|V4)\b/i.test(raw)) {
+                setBevelMode(true);
+            }
+
+            // 6. Водостойкость по часам (24 / 48 / 72 / 100 часов)
+            const hoursMatch = raw.match(/(\d{2,3})\s*(?:час|ч\b)/i);
+            if (hoursMatch) {
+                setWaterPreset(hoursMatch[1]);
+            } else if (/Влагостойк/i.test(raw)) {
+                setWaterPreset('std');
+            }
+
+            // 7. Эко безопасность E1 / Пожарная безопасность КМ5 / Гарантия
+            const kmMatch = raw.match(/\b(КМ\s*\d|KM\s*\d)\b/i);
+            const e1Match = raw.match(/\b(E1|Е1)\b/i);
+            if (kmMatch) {
+                setFourthIconPreset('KM5', kmMatch[1].toUpperCase().replace(/\s+/g, ''));
+            } else if (e1Match) {
+                setFourthIconPreset('E1');
+            } else {
+                // По правилу: если E1 не написан, можем оставить E1 или переключить на КМ5
+                setFourthIconPreset('E1');
+            }
+
+            // 8. Замковое соединение
+            const lockMatch = raw.match(/(?:Замковое\s+соединение|Замок)\s*[:\-–]\s*([^\n\r]+)/i);
+            if (lockMatch) {
+                let lockVal = lockMatch[1].trim();
+                if (/clic\s*it/i.test(lockVal)) lockVal = 'CLIC it';
+                if (/uni\s*fit/i.test(lockVal)) lockVal = 'UNI fit!';
+                document.getElementById('lockInput').value = lockVal;
+            }
+
+            renderCard();
+            showToast('Характеристики распознаны и нанесены на карточку!');
+        }
+
+        // Поиск характеристик в сети с помощью Gemini API + Google Search Grounding
+        async function fetchSpecsWithGemini() {
+            const rawQuery = document.getElementById('rawSpecsInput').value.trim() || document.getElementById('titleInput').value.trim();
+            if (!rawQuery) {
+                showToast('Введи артикул или название декора для поиска!');
+                return;
+            }
+
+            const btn = document.getElementById('aiSearchBtn');
+            const statusEl = document.getElementById('parserStatus');
+            btn.disabled = true;
+            btn.innerHTML = `<i class="ph-bold ph-Spinner animate-spin"></i> <span>Ищу...</span>`;
+            statusEl.classList.remove('hidden');
+            statusEl.textContent = 'Ищу точные характеристики декора через Google Search...';
+
+            const apiKey = "";
+            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${apiKey}`;
+
+            const systemPrompt = `Ты эксперт по напольным покрытиям и ламинату (Egger, Kronotex, Tarkett и др.).
+Найди точные характеристики указанного декора ламината и верни СТРОГО валидный JSON-объект без лишнего текста:
+{
+  "title": "Артикул и название декора (например: EHL032 Дуб Альвадос)",
+  "thickness": "число толщины в мм, например 8, 10 или 12",
+  "loadClass": "класс нагрузки 31, 32, 33 или 34",
+  "acRating": "класс истираемости AC3, AC4, AC5 или AC6",
+  "hasBevel": true или false (есть ли фаска 4V),
+  "waterHours": "пустая строка для обычной влагостойкости, либо число часов: 24, 48, 72 или 100",
+  "ecoOrFire": "E1 или KM5",
+  "lockType": "название замка, например CLIC it или UNI fit!"
+}`;
+
+            const payload = {
+                contents: [{ parts: [{ text: `Найди характеристики ламината и заполни карточку: ${rawQuery}` }] }],
+                tools: [{ "google_search": {} }],
+                systemInstruction: { parts: [{ text: systemPrompt }] }
+            };
+
+            try {
+                let response;
+                let delay = 1000;
+                for (let attempt = 0; attempt < 3; attempt++) {
+                    response = await fetch(apiUrl, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload)
+                    });
+                    if (response.ok) break;
+                    await new Promise(r => setTimeout(r, delay));
+                    delay *= 2;
+                }
+
+                const result = await response.json();
+                const text = result?.candidates?.[0]?.content?.parts?.[0]?.text || '';
+                const jsonMatch = text.match(/\{[\s\S]*\}/);
+
+                if (jsonMatch) {
+                    const data = JSON.parse(jsonMatch[0]);
+                    if (data.title) document.getElementById('titleInput').value = data.title;
+                    if (data.thickness) document.getElementById('thicknessInput').value = String(data.thickness).replace(/[^\d.,]/g, '');
+                    if (data.loadClass) document.getElementById('loadClassInput').value = String(data.loadClass);
+                    if (data.acRating) document.getElementById('acInput').value = data.acRating;
+                    if (typeof data.hasBevel === 'boolean') setBevelMode(data.hasBevel);
+                    if (data.waterHours && /\d+/.test(String(data.waterHours))) {
+                        setWaterPreset(String(data.waterHours).match(/\d+/)[0]);
+                    } else {
+                        setWaterPreset('std');
+                    }
+                    if (data.ecoOrFire && /KM|КМ/i.test(data.ecoOrFire)) {
+                        setFourthIconPreset('KM5');
+                    } else {
+                        setFourthIconPreset('E1');
+                    }
+                    if (data.lockType) document.getElementById('lockInput').value = data.lockType;
+
+                    renderCard();
+                    statusEl.textContent = 'Характеристики успешно найдены и подставлены!';
+                    showToast('Данные обновлены через Gemini AI!');
+                } else {
+                    parseRawTextLocally();
+                    statusEl.textContent = 'Применен локальный разбор текста.';
+                }
+            } catch (err) {
+                parseRawTextLocally();
+                statusEl.textContent = 'Сработал встроенный парсер текста.';
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = `<i class="ph-bold ph-MagnifyingGlass"></i> <span>Найти через ИИ</span>`;
+            }
+        }
+
+        // ============================================================================
+        // БЫСТРЫЕ ПРЕСЕТЫ И ПЕРЕКЛЮЧАТЕЛИ ДЛЯ УДОБНОЙ РАБОТЫ
+        // ============================================================================
+        function setTitleValue(val) {
+            document.getElementById('titleInput').value = val;
+            renderCard();
+        }
+
+        function setField(id, val) {
+            document.getElementById(id).value = val;
+            renderCard();
+        }
+
+        function setLoadClass(cls) {
+            document.getElementById('loadClassInput').value = cls;
+            const acMap = { '31': 'AC3', '32': 'AC4', '33': 'AC5', '34': 'AC6' };
+            if (acMap[cls]) {
+                document.getElementById('acInput').value = acMap[cls];
+            }
+            renderCard();
+        }
+
+        function setBevelMode(hasBevel) {
+            state.hasBevel = hasBevel;
+            document.getElementById('bevelLabelInput').value = hasBevel ? 'С фаской' : 'Без Фаски';
+            document.getElementById('bevelInnerInput').value = hasBevel ? 'V4' : '';
+            updateBevelButtonsUI();
+            renderCard();
+        }
+
+        function updateBevelButtonsUI() {
+            const btnNo = document.getElementById('btnBevelNo');
+            const btnYes = document.getElementById('btnBevelYes');
+            if (state.hasBevel) {
+                btnYes.className = 'py-1.5 px-2 rounded-lg text-xs font-bold border bg-amber-500/20 border-amber-500 text-amber-300 transition';
+                btnNo.className = 'py-1.5 px-2 rounded-lg text-xs font-medium border bg-slate-900 border-slate-700 text-slate-400 hover:text-slate-200 transition';
+            } else {
+                btnNo.className = 'py-1.5 px-2 rounded-lg text-xs font-bold border bg-amber-500/20 border-amber-500 text-amber-300 transition';
+                btnYes.className = 'py-1.5 px-2 rounded-lg text-xs font-medium border bg-slate-900 border-slate-700 text-slate-400 hover:text-slate-200 transition';
+            }
+        }
+
+        function setFourthIconPreset(mode, customVal) {
+            if (mode === 'E1') {
+                document.getElementById('ecoLine1').value = 'Класс Эко';
+                document.getElementById('ecoLine2').value = 'Безопасности';
+                document.getElementById('ecoValue').value = 'E1';
+            } else if (mode === 'KM5') {
+                document.getElementById('ecoLine1').value = 'Пожарная';
+                document.getElementById('ecoLine2').value = 'Безопасность';
+                document.getElementById('ecoValue').value = customVal || 'КМ5';
+            } else if (mode === 'WARRANTY25') {
+                document.getElementById('ecoLine1').value = 'Гарантия';
+                document.getElementById('ecoLine2').value = 'Производителя';
+                document.getElementById('ecoValue').value = '25 лет';
+            }
+            renderCard();
+        }
+
+        function setWaterPreset(hours) {
+            if (hours === 'std') {
+                document.getElementById('waterBottom1').value = 'Влагостойкий';
+                document.getElementById('waterBottom2').value = '';
+                document.getElementById('waterBadge').value = '';
+            } else {
+                const hNum = parseInt(hours, 10);
+                let suffix = 'часов';
+                if (hNum % 10 === 1 && hNum % 100 !== 11) suffix = 'час';
+                else if ([2, 3, 4].includes(hNum % 10) && ![12, 13, 14].includes(hNum % 100)) suffix = 'часа';
+
+                document.getElementById('waterBottom1').value = 'Водостойкий';
+                document.getElementById('waterBottom2').value = `${hours} ${suffix}`;
+                document.getElementById('waterBadge').value = `${hours}ч`;
+            }
+            renderCard();
+        }
+
+        function loadPreset(code) {
+            if (code === 'EHL032') {
+                document.getElementById('rawSpecsInput').value = `EHL032 Дуб Альвадос\nТолщина, мм - 8 мм\nКласс - 33 кл\nВлагостойкость - Влагостойкая поверхность\nФаска - Да\nГарантия - 25 лет\nЗамковое соединение: Clic it`;
+                parseRawTextLocally();
+            } else if (code === 'EHL039') {
+                document.getElementById('rawSpecsInput').value = `EHL039 Дуб паркетный\nТолщина, мм - 8 мм\nКласс - 33 кл\nВлагостойкость - Влагостойкая поверхность\nФаска - Да\nГарантия - 25 лет\nЗамковое соединение: Clic it`;
+                parseRawTextLocally();
+            } else if (code === 'EHL135') {
+                document.getElementById('rawSpecsInput').value = `EHL135 Дуб Репино\nТолщина, мм - 8 мм\nКласс - 32 кл\nИзносостойкость - AC4\nВлагостойкость - Влагостойкий\nФаска - Нет\nЗамковое соединение: CLIC it`;
+                parseRawTextLocally();
+            }
+        }
+
+        // ============================================================================
+        // ЗАГРУЗКА ФОТО ТЕКСТУР И ПАКЕТНАЯ ОЧЕРЕДЬ
+        // ============================================================================
+        function setupDragAndDrop() {
+            const dz = document.getElementById('dropZone');
+            ['dragenter', 'dragover'].forEach(evt => {
+                dz.addEventListener(evt, e => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    dz.classList.add('border-amber-400', 'bg-amber-500/10');
+                });
+            });
+            ['dragleave', 'drop'].forEach(evt => {
+                dz.addEventListener(evt, e => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    dz.classList.remove('border-amber-400', 'bg-amber-500/10');
+                });
+            });
+            dz.addEventListener('drop', e => {
+                const files = e.dataTransfer?.files;
+                if (files && files.length > 0) {
+                    processTextureFiles(files);
+                }
+            });
+        }
+
+        function handleTextureUpload(event) {
+            const files = event.target.files;
+            if (files && files.length > 0) {
+                processTextureFiles(files);
+            }
+        }
+
+        async function processTextureFiles(fileList) {
+            const files = Array.from(fileList).filter(f => f.type.startsWith('image/'));
+            if (files.length === 0) return;
+
+            for (const file of files) {
+                const dataUrl = await readFileAsDataURL(file);
+                const img = await loadImageFromSrc(dataUrl);
+                const cleanTitle = file.name.replace(/\.[^/.]+$/, '').trim();
+                state.photoQueue.push({
+                    name: file.name,
+                    title: cleanTitle,
+                    img,
+                    dataUrl
+                });
+            }
+
+            // Переключаемся на последний загруженный декор
+            selectQueueItem(state.photoQueue.length - 1);
+            renderPhotoQueueUI();
+            showToast(`Загружено фото текстур: ${files.length} шт.`);
+        }
+
+        function selectQueueItem(index) {
+            const item = state.photoQueue[index];
+            if (!item) return;
+            state.activeQueueIndex = index;
+            state.decorImage = item.img;
+
+            if (document.getElementById('autoTitleFromFilename').checked && item.title) {
+                document.getElementById('titleInput').value = item.title;
+            }
+            renderPhotoQueueUI();
+            renderCard();
+        }
+
+        function renderPhotoQueueUI() {
+            const container = document.getElementById('photoQueueContainer');
+            const list = document.getElementById('photoQueueList');
+            const countEl = document.getElementById('queueCount');
+
+            if (state.photoQueue.length === 0) {
+                container.classList.add('hidden');
+                return;
+            }
+
+            container.classList.remove('hidden');
+            countEl.textContent = state.photoQueue.length;
+            list.innerHTML = '';
+
+            state.photoQueue.forEach((item, idx) => {
+                const active = idx === state.activeQueueIndex;
+                const btn = document.createElement('button');
+                btn.onclick = () => selectQueueItem(idx);
+                btn.className = `flex items-center gap-2 px-2.5 py-1.5 rounded-xl border text-xs shrink-0 transition ${
+                    active 
+                        ? 'bg-amber-500/20 border-amber-500 text-amber-300 font-semibold' 
+                        : 'bg-slate-950 border-slate-800 text-slate-400 hover:text-slate-200'
+                }`;
+                btn.innerHTML = `
+                    <img src="${item.dataUrl}" class="w-6 h-6 rounded object-cover border border-slate-700">
+                    <span class="max-w-[130px] truncate">${item.title}</span>
+                `;
+                list.appendChild(btn);
+            });
+        }
+
+        // ============================================================================
+        // ЗАГРУЗКА ПОЛЬЗОВАТЕЛЬСКИХ ШАБЛОНОВ (Шаблон 1.png / Шаблон 2.png) И ШРИФТОВ
+        // ============================================================================
+        async function uploadCustomTemplate(num, event) {
+            const file = event.target.files?.[0];
+            if (!file) return;
+
+            const dataUrl = await readFileAsDataURL(file);
+            const img = await loadImageFromSrc(dataUrl);
+            if (!img) return;
+
+            if (num === 1) {
+                state.template1Image = img;
+                try { localStorage.setItem('egger_tpl_1', dataUrl); } catch (e) {}
+                updateTemplateBadge(1, 'Загружен PNG');
+            } else {
+                state.template2Image = img;
+                try { localStorage.setItem('egger_tpl_2', dataUrl); } catch (e) {}
+                updateTemplateBadge(2, 'Загружен PNG');
+            }
+
+            renderCard();
+            showToast(`Шаблон ${num} успешно сохранен в браузере!`);
+        }
+
+        function updateTemplateBadge(num, text) {
+            const el = document.getElementById(num === 1 ? 'tpl1Badge' : 'tpl2Badge');
+            if (el) {
+                el.textContent = text;
+                el.className = 'text-[10px] px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/30';
+            }
+        }
+
+        async function uploadCustomFonts(event) {
+            const files = Array.from(event.target.files || []);
+            if (files.length === 0) return;
+
+            for (const file of files) {
+                const buffer = await file.arrayBuffer();
+                const name = file.name.toLowerCase();
+                let descriptors = { weight: '900', style: 'italic' };
+
+                if (name.includes('blackitalic')) descriptors = { weight: '900', style: 'italic' };
+                else if (name.includes('bolditalic')) descriptors = { weight: '700', style: 'italic' };
+                else if (name.includes('bold')) descriptors = { weight: '700', style: 'normal' };
+                else if (name.includes('regular')) descriptors = { weight: '400', style: 'normal' };
+
+                const fontFace = new FontFace('Lato', buffer, descriptors);
+                const loaded = await fontFace.load();
+                document.fonts.add(loaded);
+            }
+
+            document.getElementById('fontStatusBadge').textContent = `Загружено TTF: ${files.length}`;
+            renderCard();
+            showToast('Твои локальные файлы шрифта Lato подключены!');
+        }
+
+        function clearSavedTemplates() {
+            localStorage.removeItem('egger_tpl_1');
+            localStorage.removeItem('egger_tpl_2');
+            state.template1Image = null;
+            state.template2Image = null;
+            document.getElementById('tpl1Badge').textContent = 'Встроенный';
+            document.getElementById('tpl2Badge').textContent = 'Встроенный';
+            renderCard();
+            showToast('Шаблоны сброшены к встроенному векторному эталону.');
+        }
+
+        function readFileAsDataURL(file) {
+            return new Promise((resolve) => {
+                const reader = new FileReader();
+                reader.onload = e => resolve(e.target.result);
+                reader.readAsDataURL(file);
+            });
+        }
+
+        // ============================================================================
+        // СКАЧИВАНИЕ PNG (1000x1000) И КОПИРОВАНИЕ В БУФЕР
+        // ============================================================================
+        function downloadCurrentCard() {
+            // Перед экспортом выключаем отладочные красные рамки, если они были включены
+            const debugToggle = document.getElementById('debugMasksToggle');
+            const wasDebug = debugToggle.checked;
+            if (wasDebug) {
+                debugToggle.checked = false;
+                renderCard();
+            }
+
+            const canvas = document.getElementById('cardCanvas');
+            const title = (document.getElementById('titleInput').value || 'Карточка_товара').trim();
+            const link = document.createElement('a');
+            link.download = `${title}.png`;
+            link.href = canvas.toDataURL('image/png', 1.0);
+            link.click();
+
+            if (wasDebug) {
+                debugToggle.checked = true;
+                renderCard();
+            }
+            showToast(`Сохранено: ${title}.png (1000×1000 px)`);
+        }
+
+        async function downloadAllQueue() {
+            if (state.photoQueue.length === 0) return;
+            for (let i = 0; i < state.photoQueue.length; i++) {
+                selectQueueItem(i);
+                await new Promise(r => setTimeout(r, 150));
+                downloadCurrentCard();
+                await new Promise(r => setTimeout(r, 250));
+            }
+        }
+
+        function copyCanvasToClipboard() {
+            const canvas = document.getElementById('cardCanvas');
+            canvas.toBlob(async (blob) => {
+                try {
+                    await navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })]);
+                    showToast('Картинка скопирована в буфер обмена!');
+                } catch (e) {
+                    downloadCurrentCard();
+                }
+            });
+        }
+
+        // Модальные окна и уведомления
+        function openTemplateModal() { document.getElementById('templateModal').classList.remove('hidden'); }
+        function closeTemplateModal() { document.getElementById('templateModal').classList.add('hidden'); }
+        function openGithubModal() { document.getElementById('githubModal').classList.remove('hidden'); }
+        function closeGithubModal() { document.getElementById('githubModal').classList.add('hidden'); }
+
+        let toastTimer = null;
+        function showToast(msg) {
+            const box = document.getElementById('toastBox');
+            document.getElementById('toastMessage').textContent = msg;
+            box.classList.remove('hidden');
+            clearTimeout(toastTimer);
+            toastTimer = setTimeout(() => box.classList.add('hidden'), 3200);
+        }
+    </script>
+</body>
+</html>
