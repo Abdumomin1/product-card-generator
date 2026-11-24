@@ -136,7 +136,7 @@
     { factory: 'Кроношпан Сморгонь', words: ['СМОРГОНЬ', 'SMORGON'] },
     { factory: 'Кронотекс', words: ['KRONOTEX', 'КРОНОТЕКС'] },
     { factory: 'Кронопол', words: ['KRONOPOL', 'КРОНОПОЛ'] },
-    { factory: 'Бамонт', words: ['BAMONT', 'БАМОНТ'] },
+    { factory: 'Бамонт', words: ['BAMONT', 'БАМОНТ', 'JOSS', 'BEAUMONT', 'ЖОСС'] },
     { factory: 'Melodia', words: ['MELODIA'] },
   ];
 

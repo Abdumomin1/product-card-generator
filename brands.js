@@ -33,7 +33,12 @@ window.BRANDS = {
   'AGT': { name: 'AGT', madeInRussia: false, title: '{art} {decor}', water: '', lock: '' },
   'Кронотекс': { name: 'KRONOTEX', madeInRussia: false, title: '{art} {decor}', water: '', lock: '' },
   'Кронопол': { name: 'KRONOPOL', madeInRussia: false, title: '{art} {decor}', water: '', lock: '' },
-  'Бамонт': { name: 'BAMONT', madeInRussia: false, title: '{decor}', water: '', lock: '' },
+  // jossbeaumont.ru: замок JCLICK, фаска 4V, эко-класс E0, пожаробезопасность KM2 (см. SOURCES.md).
+  'Бамонт': {
+    name: 'JOSS BEAUMONT', madeInRussia: false, title: '{coll} {decor}',
+    extraTop: 'Класс Эко', extraBottom: 'Безопасности', extraValue: 'E0', extraGreen: true,
+    water: '', lock: 'JCLICK', bevelYes: 'Фаска 4V|с 4-х сторон',
+  },
   'Melodia': { name: 'MELODIA', madeInRussia: false, title: '{art} {decor}', water: '', lock: '' },
   'Caravan': { name: 'CARAVAN', madeInRussia: false, title: '{art} {decor}', water: '', lock: '' },
 };

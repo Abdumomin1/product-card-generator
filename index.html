@@ -60,7 +60,7 @@
         Без артикула ищу по названию декора. Можно сразу много файлов.</span>
       <input type="file" id="files" accept="image/*" multiple hidden>
     </div>
-    <p class="mut">Завод, коллекцию, толщину, класс и фаску беру из таблицы «Каталог» (листы «Ламинат», «Паркет», «SPC»).
+    <p class="mut">Завод, коллекцию, толщину, класс и фаску беру из таблицы «Каталог» (листы «Ламинат» и «SPC»).
       Замок и влагостойкость — из настроек завода внизу. Готовый файл называется как номенклатура в 1С — его можно сразу класть в папку «Каталог» на Диске, бот подхватит.</p>
     <div class="row">
       <label class="chk"><input type="radio" name="mode" value="card" checked> карточка с рамкой и значками</label>
@@ -100,7 +100,7 @@
 (function () {
   'use strict';
   var SHEET_ID = '1JSCgXBTlrYnvWLD-bHXfp9DCtXOKgFXZEh1zn2bBoe4';
-  var SHEETS = ['Ламинат', 'Паркет', 'SPC'];
+  var SHEETS = ['Ламинат', 'SPC'];
   var EXEC = 'https://script.google.com/macros/s/AKfycbzFkHZcid1-j9DrkHGHhFavFPMJdylnpDAEsXLmdbY2Yde8Egz-no90c3uivVjiP1yiLg/exec';
 
   var PRODUCTS = [], ITEMS = [];   // ITEMS: {file, img, note, list:[{p, on, canvas}]}
