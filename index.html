@@ -1,1592 +1,346 @@
-<!DOCTYPE html>
-<html lang="ru" class="dark">
+<!doctype html>
+<html lang="ru">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Генератор карточек товаров — Ламинат 1000×1000px</title>
-    <!-- Tailwind CSS -->
-    <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Google Fonts: Lato (Black Italic 900i, Bold 700, Bold Italic 700i, Regular 400) -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Lato:ital,wght@0,400;0,700;0,900;1,400;1,700;1,900&display=swap" rel="stylesheet">
-    <!-- Phosphor Icons -->
-    <script src="https://unpkg.com/@phosphor-icons/web"></script>
-    <!-- JSZip для пакетного скачивания архивом (Batch ZIP) -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
-    <script>
-        tailwind.config = {
-            darkMode: 'class',
-            theme: {
-                extend: {
-                    fontFamily: {
-                        sans: ['Inter', 'sans-serif'],
-                        lato: ['Lato', 'sans-serif'],
-                    },
-                    colors: {
-                        egger: {
-                            blue: '#18354A',
-                            cream: '#F4F3EA',
-                            yellow: '#F3C95B',
-                            red: '#EE3124',
-                            green: '#0D7A11',
-                            drop: '#00A8E8'
-                        }
-                    }
-                }
-            }
-        }
-    </script>
-    <style>
-        /* Локальные шрифты Lato для точного рендера на HTML5 Canvas (assets/fonts + корень) */
-        @font-face {
-            font-family: 'Lato';
-            src: url('./assets/fonts/Lato-BlackItalic.ttf') format('truetype'),
-                 url('./Lato-BlackItalic.ttf') format('truetype');
-            font-weight: 900;
-            font-style: italic;
-            font-display: block;
-        }
-        @font-face {
-            font-family: 'Lato';
-            src: url('./assets/fonts/Lato-Bold.ttf') format('truetype'),
-                 url('./Lato-Bold.ttf') format('truetype');
-            font-weight: 700;
-            font-style: normal;
-            font-display: block;
-        }
-        @font-face {
-            font-family: 'Lato';
-            src: url('./assets/fonts/Lato-BoldItalic.ttf') format('truetype'),
-                 url('./Lato-BoldItalic.ttf') format('truetype');
-            font-weight: 700;
-            font-style: italic;
-            font-display: block;
-        }
-        @font-face {
-            font-family: 'Lato';
-            src: url('./assets/fonts/Lato-Regular.ttf') format('truetype'),
-                 url('./Lato-Regular.ttf') format('truetype');
-            font-weight: 400;
-            font-style: normal;
-            font-display: block;
-        }
-
-        /* Кастомный скроллбар */
-        ::-webkit-scrollbar { width: 6px; height: 6px; }
-        ::-webkit-scrollbar-track { background: #1e293b; }
-        ::-webkit-scrollbar-thumb { background: #475569; border-radius: 3px; }
-        ::-webkit-scrollbar-thumb:hover { background: #64748b; }
-
-        /* Шахматный фон прозрачности для превью холста */
-        .checkerboard {
-            background-color: #1e293b;
-            background-image: 
-                linear-gradient(45deg, #0f172a 25%, transparent 25%), 
-                linear-gradient(-45deg, #0f172a 25%, transparent 25%), 
-                linear-gradient(45deg, transparent 75%, #0f172a 75%), 
-                linear-gradient(-45deg, transparent 75%, #0f172a 75%);
-            background-size: 20px 20px;
-            background-position: 0 0, 0 10px, 10px -10px, -10px 0px;
-        }
-    </style>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Карточки Maff</title>
+<style>
+  :root { --bg:#f7f5f2; --card:#fff; --ink:#1c1a17; --mut:#6f6a62; --line:#e2ddd5; --acc:#b8862b; --ok:#1d7a3a; --crit:#b3261e; --warn:#9a6400; }
+  @media (prefers-color-scheme: dark) { :root { --bg:#151310; --card:#1f1c18; --ink:#f1ede6; --mut:#a39c90; --line:#35302a; --acc:#e0b354; --ok:#58c57c; --crit:#ff8a80; --warn:#f0b75a; } }
+  * { box-sizing: border-box; }
+  body { margin:0; background:var(--bg); color:var(--ink); font:15px/1.45 system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif; }
+  header { display:flex; gap:12px; align-items:center; padding:14px 16px; border-bottom:1px solid var(--line); flex-wrap:wrap; }
+  header h1 { font-size:18px; margin:0; flex:1; min-width:180px; }
+  main { max-width:1200px; margin:0 auto; padding:16px; }
+  section { background:var(--card); border:1px solid var(--line); border-radius:14px; padding:16px; margin-bottom:16px; }
+  h2 { font-size:16px; margin:0 0 10px; }
+  p { margin:6px 0; } .mut { color:var(--mut); font-size:13.5px; }
+  button { font:inherit; border:1px solid var(--line); background:var(--card); color:var(--ink); border-radius:10px; padding:9px 14px; cursor:pointer; }
+  button.pri { background:var(--acc); border-color:var(--acc); color:#1c1a17; font-weight:600; }
+  button:disabled { opacity:.5; cursor:default; }
+  input[type=text] { font:inherit; padding:8px 10px; border:1px solid var(--line); border-radius:9px; background:var(--bg); color:var(--ink); width:100%; }
+  label { display:block; font-size:13px; color:var(--mut); margin:8px 0 3px; }
+  .row { display:flex; gap:10px; flex-wrap:wrap; align-items:center; }
+  .drop { border:2px dashed var(--line); border-radius:14px; padding:30px 16px; text-align:center; cursor:pointer; }
+  .drop.over { border-color:var(--acc); background:rgba(184,134,43,.08); }
+  .grid { display:grid; grid-template-columns:repeat(auto-fill, minmax(230px, 1fr)); gap:14px; }
+  .tile { border:1px solid var(--line); border-radius:12px; overflow:hidden; background:var(--bg); }
+  .tile canvas { display:block; width:100%; aspect-ratio:1; object-fit:cover; background:#ccc; cursor:zoom-in; }
+  .tile .b { padding:9px 10px 11px; font-size:13.5px; }
+  .tile .t { font-weight:600; overflow-wrap:anywhere; }
+  .tile.off { opacity:.45; }
+  .tag { display:inline-block; font-size:12px; border-radius:6px; padding:1px 7px; margin:4px 4px 0 0; border:1px solid var(--line); color:var(--mut); }
+  .tag.ok { color:var(--ok); border-color:var(--ok); } .tag.bad { color:var(--crit); border-color:var(--crit); } .tag.warn { color:var(--warn); border-color:var(--warn); }
+  .chk { display:flex; gap:8px; align-items:center; margin-top:8px; color:var(--ink); font-size:14px; cursor:pointer; }
+  .chk input { width:18px; height:18px; flex:none; }
+  .file { margin:14px 0 8px; font-size:13.5px; color:var(--mut); overflow-wrap:anywhere; }
+  .file b { color:var(--ink); }
+  .note { color:var(--warn); font-size:13px; }
+  .form { display:grid; grid-template-columns:repeat(auto-fill, minmax(200px, 1fr)); gap:2px 14px; }
+  details.brand { border-top:1px solid var(--line); padding:8px 0; }
+  details.brand summary { cursor:pointer; font-weight:600; }
+  #zoom { position:fixed; inset:0; background:rgba(0,0,0,.82); display:none; align-items:center; justify-content:center; z-index:9; cursor:zoom-out; padding:12px; }
+  #zoom canvas { max-width:100%; max-height:100%; border-radius:8px; }
+  #toast { position:fixed; left:50%; bottom:22px; transform:translateX(-50%); background:#222; color:#fff; padding:10px 16px; border-radius:10px; display:none; z-index:10; max-width:90vw; }
+</style>
 </head>
-<body class="bg-slate-950 text-slate-100 font-sans min-h-screen flex flex-col selection:bg-amber-500 selection:text-slate-950">
-
-    <!-- Принудительная предзагрузка всех шрифтовых начертаний Lato для Canvas -->
-    <div aria-hidden="true" class="fixed -top-96 -left-96 opacity-0 pointer-events-none select-none" style="font-family: 'Lato', sans-serif;">
-        <span style="font-weight: 400; font-style: normal;">КЛАСС</span>
-        <span style="font-weight: 700; font-style: normal;">31 32 33 34 AC3 AC4 AC5 AC6 E1 KM5 V4 Сделано в России</span>
-        <span style="font-weight: 700; font-style: italic;">8 мм 10 мм 12 мм Толщина</span>
-        <span style="font-weight: 900; font-style: italic;">EHL032 Дуб Альвадос EHL135 Дуб Репино</span>
+<body>
+<header>
+  <h1>Карточки Maff</h1>
+  <span class="mut" id="dataInfo">Загружаю таблицу «Каталог»…</span>
+  <button id="reload" type="button">Обновить</button>
+</header>
+<main>
+  <section>
+    <h2>1. Фото декора</h2>
+    <div class="drop" id="drop">
+      <b>Перетащите сюда фото</b> или нажмите, чтобы выбрать<br>
+      <span class="mut">В имени файла — артикул: «EPL240.jpg», «50767 Дуб Лембрук.webp», «K476 Ultrafloor.png».
+        Без артикула ищу по названию декора. Можно сразу много файлов.</span>
+      <input type="file" id="files" accept="image/*" multiple hidden>
     </div>
-
-    <!-- ВЕРХНЯЯ ПАНЕЛЬ НАВИГАЦИИ -->
-    <header class="border-b border-slate-800 bg-slate-900/80 backdrop-blur-md sticky top-0 z-30">
-        <div class="max-w-[1600px] mx-auto px-4 py-3 flex flex-wrap items-center justify-between gap-3">
-            <div class="flex items-center gap-3">
-                <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-400 to-amber-600 flex items-center justify-center text-slate-950 font-black text-xl shadow-lg shadow-amber-500/20">
-                    <i class="ph-bold ph-BoundingBox"></i>
-                </div>
-                <div>
-                    <div class="flex items-center gap-2">
-                        <h1 class="font-bold text-base sm:text-lg tracking-tight text-white">Product Card Studio</h1>
-                        <span class="text-xs px-2 py-0.5 rounded-full bg-amber-500/15 text-amber-400 border border-amber-500/30 font-medium">1000×1000 px • Эталон</span>
-                    </div>
-                    <p class="text-xs text-slate-400">Точный генератор карточек по оригинальным лекалам ЭГГЕР (Шрифт Lato)</p>
-                </div>
-            </div>
-
-            <!-- Статус шаблонов и быстрые кнопки -->
-            <div class="flex items-center gap-2 flex-wrap">
-                <button onclick="openTemplateModal()" class="flex items-center gap-2 px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-xs sm:text-sm font-medium transition">
-                    <i class="ph-fill ph-Stack text-amber-400 text-base"></i>
-                    <span>Шаблоны и Шрифты</span>
-                    <span id="templateStatusBadge" class="px-1.5 py-0.5 text-[10px] rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">Эталон PNG</span>
-                </button>
-
-                <button onclick="downloadCurrentCard()" class="flex items-center gap-2 px-4 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs sm:text-sm shadow-lg shadow-amber-500/20 transition">
-                    <i class="ph-bold ph-DownloadSimple text-base"></i>
-                    <span>Скачать PNG</span>
-                </button>
-            </div>
-        </div>
-    </header>
-
-    <!-- ОСНОВНОЙ РАБОЧИЙ ЭКРАН -->
-    <main class="flex-1 max-w-[1600px] w-full mx-auto p-4 grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-
-        <!-- ЛЕВАЯ КОЛОНКА: ВВОД ДАННЫХ, ПАРСЕР И НАСТРОЙКИ ХАРАКТЕРИСТИК (5 колонок) -->
-        <div class="lg:col-span-5 space-y-4">
-
-            <!-- БЛОК 0: БЫСТРЫЕ ЗАВОДСКИЕ ПРЕСЕТЫ (ПО ТВОИМ 7 ШАБЛОНАМ) -->
-            <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4 shadow-xl">
-                <div class="flex items-center justify-between mb-2.5">
-                    <label class="text-xs font-semibold uppercase tracking-wider text-amber-400 flex items-center gap-1.5">
-                        <i class="ph-fill ph-Swatches text-sm"></i>
-                        Быстрые заводские стандарты (Шаблоны 1–7)
-                    </label>
-                    <span class="text-[11px] text-slate-400">1 клик — все иконки по ГОСТу</span>
-                </div>
-                <div class="grid grid-cols-2 sm:grid-cols-3 gap-1.5">
-                    <button onclick="applyStandardTemplate(7)" class="p-2 rounded-xl bg-slate-950 hover:bg-slate-800 border border-slate-800 hover:border-amber-500/50 text-left transition">
-                        <div class="text-xs font-bold text-white">8 мм • 32 кл • AC4</div>
-                        <div class="text-[10px] text-slate-400">Без Фаски (Шаблон 3 / 7)</div>
-                    </button>
-                    <button onclick="applyStandardTemplate(6)" class="p-2 rounded-xl bg-slate-950 hover:bg-slate-800 border border-slate-800 hover:border-amber-500/50 text-left transition">
-                        <div class="text-xs font-bold text-amber-300">8 мм • 32 кл • AC4</div>
-                        <div class="text-[10px] text-slate-400">С фаской V4 (Шаблон 6)</div>
-                    </button>
-                    <button onclick="applyStandardTemplate(2)" class="p-2 rounded-xl bg-slate-950 hover:bg-slate-800 border border-slate-800 hover:border-amber-500/50 text-left transition">
-                        <div class="text-xs font-bold text-emerald-300">8 мм • 33 кл • AC5</div>
-                        <div class="text-[10px] text-slate-400">С фаской V4 (Шаблон 1_2 / 2)</div>
-                    </button>
-                    <button onclick="applyStandardTemplate(4)" class="p-2 rounded-xl bg-slate-950 hover:bg-slate-800 border border-slate-800 hover:border-amber-500/50 text-left transition">
-                        <div class="text-xs font-bold text-sky-300">10 мм • 33 кл • AC5</div>
-                        <div class="text-[10px] text-slate-400">С фаской V4 (Шаблон 4)</div>
-                    </button>
-                    <button onclick="applyStandardTemplate(5)" class="p-2 rounded-xl bg-slate-950 hover:bg-slate-800 border border-slate-800 hover:border-amber-500/50 text-left transition">
-                        <div class="text-xs font-bold text-indigo-300">12 мм • 33 кл • AC5</div>
-                        <div class="text-[10px] text-slate-400">С фаской V4 (Шаблон 5)</div>
-                    </button>
-                    <button onclick="applyStandardTemplate(1)" class="p-2 rounded-xl bg-slate-950 hover:bg-slate-800 border border-slate-800 hover:border-amber-500/50 text-left transition">
-                        <div class="text-xs font-bold text-slate-200">8 мм • 32 кл • AC5</div>
-                        <div class="text-[10px] text-slate-400">Без Фаски (Шаблон 1)</div>
-                    </button>
-                </div>
-            </div>
-
-            <!-- БЛОК 1: БЫСТРАЯ ВСТАВКА ТЕКСТА / ПАРСЕР -->
-            <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4 shadow-xl">
-                <div class="flex items-center justify-between mb-2">
-                    <label class="text-xs font-semibold uppercase tracking-wider text-amber-400 flex items-center gap-1.5">
-                        <i class="ph-fill ph-Sparkle text-sm"></i>
-                        Быстрый парсер характеристик из текста
-                    </label>
-                    <div class="flex gap-1.5">
-                        <button onclick="loadPreset('EHL032')" class="text-[11px] px-2 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 transition">
-                            EHL032
-                        </button>
-                        <button onclick="loadPreset('EHL135')" class="text-[11px] px-2 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 transition">
-                            EHL135
-                        </button>
-                    </div>
-                </div>
-
-                <textarea id="rawSpecsInput" rows="3" 
-                    class="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-xs sm:text-sm text-slate-200 placeholder-slate-500 focus:outline-none focus:border-amber-500 transition font-mono leading-relaxed"
-                    placeholder="Вставь сюда описание или название декора, например:&#10;8 мм EPL034 Дуб Нарва&#10;Класс - 32 кл, Без фаски">EHL032 Дуб Альвадос
-Толщина, мм - 8 мм
-Класс - 33 кл
-Фаска - Да
-Замковое соединение: CLIC it</textarea>
-
-                <div class="flex flex-wrap items-center gap-2 mt-2">
-                    <button onclick="parseRawTextLocally()" class="flex-1 py-2 px-3 rounded-xl bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 border border-emerald-500/30 font-semibold text-xs sm:text-sm flex items-center justify-center gap-1.5 transition">
-                        <i class="ph-bold ph-Lightning"></i>
-                        <span>Заполнить из текста (Мгновенно)</span>
-                    </button>
-                </div>
-            </div>
-
-            <!-- БЛОК 2: ЗАГРУЗКА ФОТО ТЕКСТУРЫ (ОДНО ИЛИ ПАЧКА) -->
-            <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4 shadow-xl">
-                <div class="flex items-center justify-between mb-2">
-                    <label class="text-xs font-semibold uppercase tracking-wider text-slate-300 flex items-center gap-1.5">
-                        <i class="ph-fill ph-Image text-amber-400 text-sm"></i>
-                        1. Фото текстуры декора (Фон)
-                    </label>
-                    <label class="flex items-center gap-1.5 text-xs text-slate-400 cursor-pointer select-none">
-                        <input type="checkbox" id="autoTitleFromFilename" checked class="rounded bg-slate-800 border-slate-700 text-amber-500 focus:ring-0">
-                        <span>Авто-разбор имени файла (толщина + артикул)</span>
-                    </label>
-                </div>
-
-                <div id="dropZone" onclick="document.getElementById('textureFileInput').click()" 
-                    class="border-2 border-dashed border-slate-700 hover:border-amber-500/60 bg-slate-950/60 hover:bg-slate-950 rounded-xl p-4 text-center cursor-pointer transition group">
-                    <input type="file" id="textureFileInput" accept="image/*" multiple class="hidden" onchange="handleTextureUpload(event)">
-                    <div class="flex items-center justify-center gap-3">
-                        <div class="w-10 h-10 rounded-full bg-slate-800 group-hover:bg-amber-500/20 flex items-center justify-center text-amber-400 transition">
-                            <i class="ph-bold ph-UploadSimple text-xl"></i>
-                        </div>
-                        <div class="text-left">
-                            <p class="text-xs sm:text-sm font-semibold text-slate-200 group-hover:text-amber-300 transition">Нажми или перетащи сюда фото декора (.jpg, .png)</p>
-                            <p class="text-[11px] text-slate-400">Понимает имена вроде <code class="text-slate-300">8 мм EPL034 Дуб Нарва.jpg</code> и чистит суффиксы Upscayl</p>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Очередь загруженных фоток (для пакетной работы) -->
-                <div id="photoQueueContainer" class="mt-3 hidden">
-                    <div class="flex flex-wrap items-center justify-between gap-2 text-xs text-slate-400 mb-1.5">
-                        <span>Загруженные декоры (<span id="queueCount">0</span>):</span>
-                        <div class="flex items-center gap-3">
-                            <button onclick="downloadBatchZip()" class="text-emerald-400 hover:underline font-semibold flex items-center gap-1">
-                                <i class="ph-bold ph-FileZip"></i> Скачать все (ZIP)
-                            </button>
-                            <button onclick="downloadAllQueue()" class="text-amber-400 hover:underline font-medium flex items-center gap-1">
-                                <i class="ph-bold ph-Download"></i> По очереди
-                            </button>
-                        </div>
-                    </div>
-                    <div id="photoQueueList" class="flex gap-2 overflow-x-auto pb-1"></div>
-                </div>
-            </div>
-
-            <!-- БЛОК 3: ДЕТАЛЬНАЯ НАСТРОЙКА ВСЕХ 7 ИКОНОК И ЗАГОЛОВКА -->
-            <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4 shadow-xl space-y-4">
-                <div class="flex items-center justify-between border-b border-slate-800 pb-2.5">
-                    <h2 class="text-xs font-semibold uppercase tracking-wider text-slate-300 flex items-center gap-1.5">
-                        <i class="ph-fill ph-SlidersHorizontal text-amber-400 text-sm"></i>
-                        2. Параметры на плашке (Lato)
-                    </h2>
-                    <span class="text-[11px] text-slate-400">Точные координаты 1:1 с эталоном</span>
-                </div>
-
-                <!-- ЗАГОЛОВОК ДЕКОРА -->
-                <div>
-                    <div class="flex justify-between items-center mb-1">
-                        <label class="text-xs text-slate-300 font-medium">Заголовок декора (Lato Black Italic, можно оставить пустым)</label>
-                        <button onclick="setTitleValue('')" class="text-[10px] px-1.5 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-slate-300">Очистить заголовок</button>
-                    </div>
-                    <input type="text" id="titleInput" value="EHL032 Дуб Альвадос" placeholder="Оставь пустым, если нужен чистый шаблон без названия" oninput="renderCard()"
-                        class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-sm font-bold italic text-white focus:outline-none focus:border-amber-500">
-                </div>
-
-                <!-- СЕТКА ОСНОВНЫХ ПАРАМЕТРОВ -->
-                <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                    <!-- Иконка 1: Толщина -->
-                    <div class="bg-slate-950/70 border border-slate-800/80 rounded-xl p-2.5">
-                        <label class="text-[11px] text-slate-400 block mb-1">1. Толщина (мм)</label>
-                        <div class="grid grid-cols-4 gap-1 mb-1.5">
-                            <button onclick="setField('thicknessInput', '8')" class="py-1 rounded bg-slate-800 hover:bg-slate-700 text-xs font-bold">8</button>
-                            <button onclick="setField('thicknessInput', '10')" class="py-1 rounded bg-slate-800 hover:bg-slate-700 text-xs font-bold">10</button>
-                            <button onclick="setField('thicknessInput', '12')" class="py-1 rounded bg-slate-800 hover:bg-slate-700 text-xs font-bold">12</button>
-                            <button onclick="setField('thicknessInput', '14')" class="py-1 rounded bg-slate-800 hover:bg-slate-700 text-xs font-bold">14</button>
-                        </div>
-                        <input type="text" id="thicknessInput" value="8" oninput="renderCard()"
-                            class="w-full bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1 text-xs font-bold text-center text-white">
-                    </div>
-
-                    <!-- Иконка 2: Класс нагрузки -->
-                    <div class="bg-slate-950/70 border border-slate-800/80 rounded-xl p-2.5">
-                        <label class="text-[11px] text-slate-400 block mb-1">2. Класс нагрузки</label>
-                        <div class="flex gap-1 mb-1.5">
-                            <button onclick="setLoadClass('31')" class="flex-1 py-1 rounded bg-slate-800 hover:bg-slate-700 text-xs font-bold">31</button>
-                            <button onclick="setLoadClass('32')" class="flex-1 py-1 rounded bg-slate-800 hover:bg-slate-700 text-xs font-bold">32</button>
-                            <button onclick="setLoadClass('33')" class="flex-1 py-1 rounded bg-slate-800 hover:bg-slate-700 text-xs font-bold">33</button>
-                            <button onclick="setLoadClass('34')" class="flex-1 py-1 rounded bg-slate-800 hover:bg-slate-700 text-xs font-bold">34</button>
-                        </div>
-                        <input type="text" id="loadClassInput" value="33" oninput="renderCard()"
-                            class="w-full bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1 text-xs font-bold text-center text-white">
-                    </div>
-
-                    <!-- Иконка 3: Износостойкость AC -->
-                    <div class="bg-slate-950/70 border border-slate-800/80 rounded-xl p-2.5">
-                        <label class="text-[11px] text-slate-400 block mb-1">3. Износостойкость</label>
-                        <div class="flex gap-1 mb-1.5">
-                            <button onclick="setField('acInput', 'AC3')" class="flex-1 py-1 rounded bg-slate-800 hover:bg-slate-700 text-xs font-bold">AC3</button>
-                            <button onclick="setField('acInput', 'AC4')" class="flex-1 py-1 rounded bg-slate-800 hover:bg-slate-700 text-xs font-bold">AC4</button>
-                            <button onclick="setField('acInput', 'AC5')" class="flex-1 py-1 rounded bg-slate-800 hover:bg-slate-700 text-xs font-bold">AC5</button>
-                            <button onclick="setField('acInput', 'AC6')" class="flex-1 py-1 rounded bg-slate-800 hover:bg-slate-700 text-xs font-bold">AC6</button>
-                        </div>
-                        <input type="text" id="acInput" value="AC5" oninput="renderCard()"
-                            class="w-full bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1 text-xs font-bold text-center text-white">
-                    </div>
-                </div>
-
-                <!-- ИКОНКА 4: ЭКО БЕЗОПАСНОСТЬ (E1) / ПОЖАРНАЯ БЕЗОПАСНОСТЬ (KM5) -->
-                <div class="bg-slate-950/70 border border-slate-800/80 rounded-xl p-3">
-                    <div class="flex items-center justify-between mb-2">
-                        <label class="text-xs font-medium text-slate-300">4. Эко E1 / Пожарная КМ5</label>
-                        <div class="flex gap-1 flex-wrap">
-                            <button onclick="setFourthIconPreset('E1')" class="text-[11px] px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 font-semibold">Эко E1</button>
-                            <button onclick="setFourthIconPreset('KM5')" class="text-[11px] px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-500/30 font-semibold">Пожарная КМ5</button>
-                        </div>
-                    </div>
-                    <div class="grid grid-cols-3 gap-2">
-                        <div>
-                            <span class="text-[10px] text-slate-500 block mb-0.5">Верхняя строка 1</span>
-                            <input type="text" id="ecoLine1" value="Класс Эко" oninput="renderCard()" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-2 py-1 text-xs text-white">
-                        </div>
-                        <div>
-                            <span class="text-[10px] text-slate-500 block mb-0.5">Верхняя строка 2</span>
-                            <input type="text" id="ecoLine2" value="Безопасности" oninput="renderCard()" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-2 py-1 text-xs text-white">
-                        </div>
-                        <div>
-                            <span class="text-[10px] text-slate-500 block mb-0.5">Крупно внутри капли</span>
-                            <input type="text" id="ecoValue" value="E1" oninput="renderCard()" class="w-full bg-slate-900 border border-emerald-600/60 rounded-lg px-2 py-1 text-xs font-bold text-emerald-400 text-center">
-                        </div>
-                    </div>
-                </div>
-
-                <!-- ИКОНКА 5: ВЛАГОСТОЙКОСТЬ -->
-                <div class="bg-slate-950/70 border border-slate-800/80 rounded-xl p-3">
-                    <div class="flex items-center justify-between mb-2">
-                        <label class="text-xs font-medium text-slate-300">5. Влагостойкость</label>
-                        <div class="flex gap-1 flex-wrap">
-                            <button onclick="setWaterPreset('std')" class="text-[11px] px-2 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-slate-200">Влагостойкий (Эталон)</button>
-                            <button onclick="setWaterPreset('24')" class="text-[11px] px-2 py-0.5 rounded bg-sky-500/20 text-sky-300 border border-sky-500/30 font-semibold">24ч</button>
-                            <button onclick="setWaterPreset('72')" class="text-[11px] px-2 py-0.5 rounded bg-sky-500/20 text-sky-300 border border-sky-500/30 font-semibold">72ч</button>
-                        </div>
-                    </div>
-                    <div class="grid grid-cols-2 gap-2">
-                        <div>
-                            <span class="text-[10px] text-slate-500 block mb-0.5">Подпись снизу (стр. 1)</span>
-                            <input type="text" id="waterBottom1" value="Влагостойкий" oninput="renderCard()" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-2 py-1 text-xs text-white">
-                        </div>
-                        <div>
-                            <span class="text-[10px] text-slate-500 block mb-0.5">Доп. строка снизу (опц.)</span>
-                            <input type="text" id="waterBottom2" value="" placeholder="пусто по эталону" oninput="renderCard()" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-2 py-1 text-xs text-sky-300">
-                        </div>
-                    </div>
-                </div>
-
-                <!-- ИКОНКА 6 (ФАСКА) И ИКОНКА 7 (ЗАМОК) -->
-                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    <!-- Иконка 6: Фаска и выбор шаблона -->
-                    <div class="bg-slate-950/70 border border-slate-800/80 rounded-xl p-3">
-                        <label class="text-xs font-medium text-slate-300 block mb-1.5">6. Наличие фаски (Выбор шаблона)</label>
-                        <div class="grid grid-cols-2 gap-1.5 mb-2">
-                            <button id="btnBevelNo" onclick="setBevelMode(false)" class="py-1.5 px-2 rounded-lg text-xs font-semibold border transition">
-                                Без Фаски (Шабл. 1)
-                            </button>
-                            <button id="btnBevelYes" onclick="setBevelMode(true)" class="py-1.5 px-2 rounded-lg text-xs font-semibold border transition">
-                                С фаской V4 (Шабл. 2)
-                            </button>
-                        </div>
-                        <div class="grid grid-cols-2 gap-1.5">
-                            <input type="text" id="bevelLabelInput" value="С фаской" oninput="renderCard()" title="Текст над иконкой"
-                                class="bg-slate-900 border border-slate-700 rounded-lg px-2 py-1 text-xs text-white">
-                            <input type="text" id="bevelInnerInput" value="V4" oninput="renderCard()" title="Индекс внутри иконки фаски"
-                                class="bg-slate-900 border border-slate-700 rounded-lg px-2 py-1 text-xs font-bold text-center text-amber-300">
-                        </div>
-                    </div>
-
-                    <!-- Иконка 7: Замковая система -->
-                    <div class="bg-slate-950/70 border border-slate-800/80 rounded-xl p-3 flex flex-col justify-between">
-                        <div>
-                            <label class="text-xs font-medium text-slate-300 block mb-1.5">7. Замковая система</label>
-                            <div class="flex flex-wrap gap-1 mb-2">
-                                <button onclick="setField('lockInput', 'CLIC it')" class="flex-1 py-1 px-1.5 rounded bg-slate-800 hover:bg-slate-700 text-[10px] font-bold">CLIC it</button>
-                                <button onclick="setField('lockInput', 'UNI fit!')" class="flex-1 py-1 px-1.5 rounded bg-slate-800 hover:bg-slate-700 text-[10px] font-bold">UNI fit!</button>
-                                <button onclick="setField('lockInput', 'Uniclic')" class="flex-1 py-1 px-1.5 rounded bg-slate-800 hover:bg-slate-700 text-[10px] font-bold">Uniclic</button>
-                            </div>
-                            <input type="text" id="lockInput" value="CLIC it" oninput="renderCard()"
-                                class="w-full bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1 text-xs font-bold text-center text-white">
-                        </div>
-                        <div class="text-[10px] text-slate-500 pt-2 border-t border-slate-800/80">
-                            По эталону ЭГГЕР: <code class="text-slate-300">CLIC it</code>
-                        </div>
-                    </div>
-                </div>
-
-            </div>
-        </div>
-
-        <!-- ПРАВАЯ КОЛОНКА: ИНТЕРАКТИВНОЕ ПРЕВЬЮ ХОЛСТА 1000x1000 (7 колонок) -->
-        <div class="lg:col-span-7 flex flex-col items-center">
-            <div class="w-full bg-slate-900 border border-slate-800 rounded-2xl p-4 shadow-2xl">
-                <!-- Верхний бар над холстом -->
-                <div class="flex flex-wrap items-center justify-between gap-2 mb-3">
-                    <div class="flex items-center gap-2">
-                        <span class="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse"></span>
-                        <span class="text-xs font-semibold text-slate-200">Живое превью (1000 × 1000 px)</span>
-                        <span id="activeTemplateIndicator" class="text-[11px] px-2 py-0.5 rounded bg-slate-800 text-amber-300 border border-slate-700">С фаской V4</span>
-                    </div>
-
-                    <div class="flex items-center gap-2">
-                        <label class="flex items-center gap-1.5 text-xs text-slate-400 cursor-pointer select-none bg-slate-950 px-2.5 py-1 rounded-lg border border-slate-800">
-                            <input type="checkbox" id="debugMasksToggle" onchange="renderCard()" class="rounded bg-slate-800 border-slate-700 text-amber-500">
-                            <span>Показать зоны масок</span>
-                        </label>
-                        <button onclick="downloadCurrentCard()" class="px-3 py-1 rounded-lg bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs flex items-center gap-1 transition">
-                            <i class="ph-bold ph-DownloadSimple"></i> Скачать <span id="downloadFilenamePreview" class="underline">EHL032 Дуб Альвадос.png</span>
-                        </button>
-                    </div>
-                </div>
-
-                <!-- КОНТЕЙНЕР ХОЛСТА -->
-                <div class="relative w-full aspect-square max-w-[740px] mx-auto rounded-xl overflow-hidden border border-slate-700/80 checkerboard shadow-inner flex items-center justify-center">
-                    <canvas id="cardCanvas" width="1000" height="1000" class="w-full h-full object-contain block"></canvas>
-                </div>
-
-                <!-- Подсказка под холстом -->
-                <div class="mt-3 flex flex-wrap items-center justify-between gap-2 text-xs text-slate-400 px-1">
-                    <div class="flex items-center gap-1.5">
-                        <i class="ph-fill ph-CheckCircle text-emerald-400"></i>
-                        <span>Цвет маски плашки синхронизирован с оригиналом (<strong>#F4F3EA</strong>).</span>
-                    </div>
-                    <button onclick="copyCanvasToClipboard()" class="text-slate-300 hover:text-amber-400 flex items-center gap-1 transition">
-                        <i class="ph-bold ph-Copy"></i> Скопировать картинку в буфер
-                    </button>
-                </div>
-            </div>
-        </div>
-
-    </main>
-
-    <!-- МОДАЛЬНОЕ ОКНО: УПРАВЛЕНИЕ ШАБЛОНАМИ PNG И ЛОКАЛЬНЫМИ ШРИФТАМИ TTF -->
-    <div id="templateModal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
-        <div class="bg-slate-900 border border-slate-700 rounded-2xl max-w-2xl w-full p-6 shadow-2xl space-y-5 max-h-[90vh] overflow-y-auto">
-            <div class="flex items-center justify-between border-b border-slate-800 pb-3">
-                <div class="flex items-center gap-2.5">
-                    <i class="ph-fill ph-Stack text-amber-400 text-2xl"></i>
-                    <div>
-                        <h3 class="font-bold text-base text-white">Оригинальные шаблоны PNG и шрифты Lato</h3>
-                        <p class="text-xs text-slate-400">Используются твои эталонные файлы без искажений</p>
-                    </div>
-                </div>
-                <button onclick="closeTemplateModal()" class="text-slate-400 hover:text-white p-1">
-                    <i class="ph-bold ph-X text-xl"></i>
-                </button>
-            </div>
-
-            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <!-- Загрузка Шаблона 1 (Без Фаски) -->
-                <div class="bg-slate-950 border border-slate-800 rounded-xl p-4 flex flex-col justify-between">
-                    <div>
-                        <div class="flex items-center justify-between mb-1">
-                            <span class="text-xs font-bold text-white">Шаблон Без Фаски (template_no_bevel.png)</span>
-                            <span id="tpl1Badge" class="text-[10px] px-1.5 py-0.5 rounded bg-slate-800 text-slate-400">Проверка...</span>
-                        </div>
-                        <p class="text-[11px] text-slate-400 mb-3">Твой оригинальный PNG («Без Фаски», например Шаблон 3 / Шаблон 7).</p>
-                    </div>
-                    <label class="cursor-pointer py-2 px-3 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 text-xs font-semibold text-center text-amber-300 transition block">
-                        <i class="ph-bold ph-UploadSimple mr-1"></i> Выбрать PNG «Без Фаски»
-                        <input type="file" accept="image/png" class="hidden" onchange="uploadCustomTemplate(1, event)">
-                    </label>
-                </div>
-
-                <!-- Загрузка Шаблона 2 (С Фаской) -->
-                <div class="bg-slate-950 border border-slate-800 rounded-xl p-4 flex flex-col justify-between">
-                    <div>
-                        <div class="flex items-center justify-between mb-1">
-                            <span class="text-xs font-bold text-white">Шаблон С фаской V4 (template_bevel.png)</span>
-                            <span id="tpl2Badge" class="text-[10px] px-1.5 py-0.5 rounded bg-slate-800 text-slate-400">Проверка...</span>
-                        </div>
-                        <p class="text-[11px] text-slate-400 mb-3">Твой оригинальный PNG («С фаской V4», например Шаблон 2 / Шаблон 6).</p>
-                    </div>
-                    <label class="cursor-pointer py-2 px-3 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 text-xs font-semibold text-center text-amber-300 transition block">
-                        <i class="ph-bold ph-UploadSimple mr-1"></i> Выбрать PNG «С фаской V4»
-                        <input type="file" accept="image/png" class="hidden" onchange="uploadCustomTemplate(2, event)">
-                    </label>
-                </div>
-            </div>
-
-            <!-- Загрузка локальных .ttf шрифтов -->
-            <div class="bg-slate-950 border border-slate-800 rounded-xl p-4">
-                <div class="flex items-center justify-between mb-1">
-                    <span class="text-xs font-bold text-white">Локальные файлы шрифтов (.ttf)</span>
-                    <span id="fontStatusBadge" class="text-[10px] px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-300">Lato подключен</span>
-                </div>
-                <div class="flex flex-wrap gap-2 mt-2">
-                    <label class="cursor-pointer py-1.5 px-3 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 text-xs text-slate-200 transition">
-                        <i class="ph-bold ph-TextAa mr-1 text-amber-400"></i> Подгрузить Lato .ttf вручную
-                        <input type="file" accept=".ttf,.otf" multiple class="hidden" onchange="uploadCustomFonts(event)">
-                    </label>
-                    <button onclick="clearSavedTemplates()" class="py-1.5 px-3 rounded-lg bg-rose-500/15 hover:bg-rose-500/25 text-rose-300 border border-rose-500/30 text-xs transition ml-auto">
-                        Сбросить кэш шаблонов
-                    </button>
-                </div>
-            </div>
-
-            <div class="flex justify-end pt-2">
-                <button onclick="closeTemplateModal()" class="px-5 py-2 rounded-xl bg-amber-500 text-slate-950 font-bold text-xs sm:text-sm">Готово</button>
-            </div>
-        </div>
+    <p class="mut">Завод, коллекцию, толщину, класс и фаску беру из таблицы «Каталог» (листы «Ламинат», «Паркет», «SPC»).
+      Замок и влагостойкость — из настроек завода внизу. Готовый файл называется как номенклатура в 1С — его можно сразу класть в папку «Каталог» на Диске, бот подхватит.</p>
+    <div class="row">
+      <label class="chk"><input type="radio" name="mode" value="card" checked> карточка с рамкой и значками</label>
+      <label class="chk"><input type="radio" name="mode" value="clean"> только переименовать фото (без рамки)</label>
     </div>
+    <p class="mut" id="csvBox" hidden>Таблица не загрузилась. Скачайте лист «Ламинат» (Файл → Скачать → CSV) и выберите файл:
+      <input type="file" id="csv" accept=".csv,text/csv"></p>
+  </section>
 
-    <!-- ВСПЛЫВАЮЩЕЕ УВЕДОМЛЕНИЕ -->
-    <div id="toastBox" class="fixed bottom-5 right-5 z-50 hidden transform transition-all duration-300">
-        <div class="bg-slate-900 border border-amber-500/40 text-slate-100 px-4 py-3 rounded-xl shadow-2xl flex items-center gap-2.5 text-xs sm:text-sm">
-            <i class="ph-fill ph-Info text-amber-400 text-lg"></i>
-            <span id="toastMessage">Готово</span>
-        </div>
+  <section id="resBox" hidden>
+    <div class="row" style="margin-bottom:6px">
+      <h2 style="flex:1;margin:0">2. Проверьте <span class="mut" id="count"></span></h2>
+      <button id="clear" type="button">Очистить</button>
+      <button class="pri" id="zip" type="button">Скачать отмеченные (ZIP)</button>
     </div>
+    <div id="res"></div>
+  </section>
 
-    <script>
-        const state = {
-            hasBevel: true,               // По умолчанию: С фаской V4 (Шаблон 2)
-            decorImage: null,             // Текущее изображение текстуры дерева
-            template1Image: null,         // Оригинальный PNG-шаблон Без фаски
-            template2Image: null,         // Оригинальный PNG-шаблон С фаской
-            templateCache: {},
-            photoQueue: [],               // Очередь загруженных текстур
-            activeQueueIndex: -1
-        };
+  <section>
+    <h2>Настройки заводов</h2>
+    <p class="mut">Пустое поле — значка нет. Меняется только у вас в браузере; кнопка ниже копирует настройки, чтобы зашить их в генератор для всех.</p>
+    <div id="brands"></div>
+    <div class="row" style="margin-top:10px">
+      <button id="copyBrands" type="button">Скопировать настройки</button>
+      <button id="resetBrands" type="button">Вернуть как было</button>
+    </div>
+  </section>
+</main>
+<div id="zoom"></div>
+<div id="toast"></div>
 
-        window.addEventListener('DOMContentLoaded', async () => {
-            setupDragAndDrop();
-            updateBevelButtonsUI();
+<script src="vendor/jszip.min.js"></script>
+<script src="card/cardgen.js"></script>
+<script src="brands.js"></script>
+<script src="match.js"></script>
+<script>
+(function () {
+  'use strict';
+  var SHEET_ID = '1JSCgXBTlrYnvWLD-bHXfp9DCtXOKgFXZEh1zn2bBoe4';
+  var SHEETS = ['Ламинат', 'Паркет', 'SPC'];
+  var EXEC = 'https://script.google.com/macros/s/AKfycbzFkHZcid1-j9DrkHGHhFavFPMJdylnpDAEsXLmdbY2Yde8Egz-no90c3uivVjiP1yiLg/exec';
 
-            // 1. Загружаем дефолтный декор EHL039 Дуб паркетный.jpg (если есть в папке)
-            const defaultDecor = await tryFetchImage('./EHL039 Дуб паркетный.jpg');
-            if (defaultDecor) {
-                state.decorImage = defaultDecor;
-                document.getElementById('titleInput').value = 'EHL039 Дуб паркетный';
-            } else {
-                state.decorImage = createProceduralOakTexture();
-            }
+  var PRODUCTS = [], ITEMS = [];   // ITEMS: {file, img, note, list:[{p, on, canvas}]}
+  var $ = function (id) { return document.getElementById(id); };
 
-            // 2. Загружаем ТОЛЬКО эталонные оригинальные PNG-шаблоны из корня (игнорируя кривые генерации в assets/templates/)
-            await tryLoadTemplates();
+  function toast(msg) {
+    var t = $('toast'); t.textContent = msg; t.style.display = 'block';
+    clearTimeout(toast.h); toast.h = setTimeout(function () { t.style.display = 'none'; }, 3500);
+  }
+  function esc(s) { return String(s == null ? '' : s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
+  function store(k, v) {
+    try { if (v === undefined) return localStorage.getItem(k); localStorage.setItem(k, v); } catch (e) { return null; }
+  }
 
-            // 3. Дожидаемся полной загрузки шрифтов Lato и рендерим карточку
-            if (document.fonts && document.fonts.ready) {
-                await document.fonts.ready;
-            }
-            renderCard();
-            setTimeout(renderCard, 350);
+  // ───────── данные из таблицы ─────────
+  function gviz(sheet) {
+    return 'https://docs.google.com/spreadsheets/d/' + SHEET_ID + '/gviz/tq?tqx=out:csv&headers=1&sheet=' + encodeURIComponent(sheet) + '&t=' + Date.now();
+  }
+  function fromExec() {
+    // запасной путь — данные каталога бота (там нет полной номенклатуры: имя файла = коллекция + декор)
+    return fetch(EXEC + '?data=json&t=' + Date.now()).then(function (r) { return r.json(); }).then(function (j) {
+      return (j.items || []).filter(function (it) { return it.k !== 'Двери' && it.s && (it.s.th || it.s.cl); }).map(function (it) {
+        var art = it.a && it.a !== '—' ? String(it.a).split(/\s+/)[0] : '';
+        return { sheet: it.k, factory: it.f, coll: it.c, spec: it.p, art: art, nom: (it.c + ' ' + it.d).trim(),
+          decor: it.d, specs: it.s, key: Match.up(art).replace(/[^0-9A-Z]/g, ''), side: '' };
+      });
+    });
+  }
+  function loadData() {
+    $('dataInfo').textContent = 'Загружаю таблицу «Каталог»…';
+    return Promise.all(SHEETS.map(function (s) {
+      return fetch(gviz(s)).then(function (r) { if (!r.ok) throw new Error(r.status); return r.text(); })
+        .then(function (t) { return Match.productsFromRows(Match.parseCSV(t), s); })
+        .catch(function () { return null; });
+    })).then(function (parts) {
+      if (parts[0] && parts[0].length) return { list: [].concat.apply([], parts.filter(Boolean)), src: 'таблица' };
+      return fromExec().then(function (l) { return { list: l, src: 'каталог бота' }; });
+    }).then(function (r) {
+      PRODUCTS = r.list;
+      $('dataInfo').textContent = 'Товаров: ' + PRODUCTS.length + ' (' + r.src + ')';
+      $('csvBox').hidden = PRODUCTS.length > 0;
+      rematch();
+    }).catch(function () {
+      $('dataInfo').textContent = 'Таблица не загрузилась';
+      $('csvBox').hidden = false;
+    });
+  }
+  $('reload').onclick = loadData;
+  $('csv').onchange = function () {
+    var f = this.files[0]; if (!f) return;
+    f.text().then(function (t) {
+      PRODUCTS = Match.productsFromRows(Match.parseCSV(t), 'Ламинат');
+      $('dataInfo').textContent = 'Товаров: ' + PRODUCTS.length + ' (из файла)';
+      rematch();
+    });
+  };
+
+  // ───────── настройки заводов ─────────
+  var FIELDS = [
+    ['name', 'Название на плашке (если нет логотипа)'], ['title', 'Заголовок: {art} {decor} {th} {coll}'],
+    ['lock', 'Замок'], ['water', 'Влагостойкость'],
+    ['extraTop', '4-й значок: подпись сверху'], ['extraBottom', '4-й значок: подпись снизу'], ['extraValue', '4-й значок: текст внутри'],
+    ['bevelYes', 'Подпись «с фаской»'], ['bevelNo', 'Подпись «без фаски»'],
+  ];
+  var BR = JSON.parse(JSON.stringify(window.BRANDS));
+  try { var saved = JSON.parse(store('maff_brands') || 'null'); if (saved) Object.keys(saved).forEach(function (k) { BR[k] = Object.assign({}, BR[k] || {}, saved[k]); }); } catch (e) {}
+  var LOGOS = {};   // завод → Image (свой логотип, загружен на странице)
+
+  function brandFor(f) {
+    var b = Object.assign({}, BR[f] || { name: f, title: '{art} {decor}' });
+    if (LOGOS[f]) b.logoImg = LOGOS[f];
+    return b;
+  }
+  function saveBrands() {
+    var out = {};
+    Object.keys(BR).forEach(function (k) { out[k] = BR[k]; });
+    store('maff_brands', JSON.stringify(out));
+  }
+  function renderBrands() {
+    var used = {};
+    PRODUCTS.forEach(function (p) { used[p.factory] = 1; });
+    Object.keys(BR).forEach(function (k) { used[k] = 1; });
+    $('brands').innerHTML = Object.keys(used).filter(Boolean).sort().map(function (f) {
+      var b = BR[f] || {};
+      var miss = ['lock', 'water'].filter(function (k) { return !b[k]; }).length;
+      return '<details class="brand" data-f="' + esc(f) + '"><summary>' + esc(f) +
+        (miss ? ' <span class="tag warn">не заполнено: ' + miss + '</span>' : ' <span class="tag ok">готово</span>') + '</summary>' +
+        '<div class="form">' + FIELDS.map(function (x) {
+          return '<div><label>' + esc(x[1]) + '</label><input type="text" data-k="' + x[0] + '" value="' + esc(b[x[0]] || '') + '"></div>';
+        }).join('') +
+        '<div><label>Логотип (PNG)</label><input type="file" accept="image/png,image/webp,image/jpeg" data-logo="1"></div></div>' +
+        '<label class="chk"><input type="checkbox" data-k="madeInRussia"' + (b.madeInRussia ? ' checked' : '') + '> «Сделано в России»</label>' +
+        '<label class="chk"><input type="checkbox" data-k="extraGreen"' + (b.extraGreen ? ' checked' : '') + '> 4-й значок зелёным</label>' +
+        '</details>';
+    }).join('');
+  }
+  $('brands').addEventListener('input', function (e) {
+    var d = e.target.closest('details'); if (!d) return;
+    var f = d.dataset.f, k = e.target.dataset.k;
+    BR[f] = BR[f] || {};
+    if (e.target.dataset.logo) {
+      var file = e.target.files[0]; if (!file) return;
+      var im = new Image(); im.onload = function () { LOGOS[f] = im; redrawAll(); }; im.src = URL.createObjectURL(file);
+      return;
+    }
+    if (!k) return;
+    BR[f][k] = e.target.type === 'checkbox' ? e.target.checked : e.target.value;
+    saveBrands(); clearTimeout(renderBrands.h); renderBrands.h = setTimeout(redrawAll, 250);
+  });
+  $('copyBrands').onclick = function () {
+    var txt = JSON.stringify(BR, null, 2);
+    (navigator.clipboard ? navigator.clipboard.writeText(txt) : Promise.reject()).then(function () { toast('Настройки скопированы — пришлите их в чат'); },
+      function () { prompt('Скопируйте настройки:', txt); });
+  };
+  $('resetBrands').onclick = function () {
+    if (!confirm('Вернуть настройки заводов как в генераторе?')) return;
+    try { localStorage.removeItem('maff_brands'); } catch (e) {}
+    BR = JSON.parse(JSON.stringify(window.BRANDS)); renderBrands(); redrawAll();
+  };
+
+  // ───────── фото ─────────
+  var drop = $('drop'), input = $('files');
+  drop.onclick = function () { input.click(); };
+  drop.ondragover = function (e) { e.preventDefault(); drop.classList.add('over'); };
+  drop.ondragleave = function () { drop.classList.remove('over'); };
+  drop.ondrop = function (e) { e.preventDefault(); drop.classList.remove('over'); addFiles(e.dataTransfer.files); };
+  input.onchange = function () { addFiles(input.files); input.value = ''; };
+
+  function loadImg(file) {
+    return new Promise(function (res) {
+      var im = new Image();
+      im.onload = function () { res(im); };
+      im.onerror = function () { res(null); };
+      im.src = URL.createObjectURL(file);
+    });
+  }
+  function addFiles(list) {
+    var files = [].filter.call(list, function (f) { return /^image\//.test(f.type) || /\.(jpe?g|png|webp|avif)$/i.test(f.name); });
+    if (!files.length) return;
+    CardGen.init().then(function () {
+      return Promise.all(files.map(function (f) {
+        return loadImg(f).then(function (im) {
+          if (!im) { toast('Не открылся файл ' + f.name); return; }
+          ITEMS.push({ file: f.name, img: im });
         });
-
-        async function loadCachedTemplate(paths) {
-            for (const p of paths) {
-                if (!p) continue;
-                if (state.templateCache[p]) return state.templateCache[p];
-                const img = await tryFetchImage(p);
-                if (img) {
-                    state.templateCache[p] = img;
-                    return img;
-                }
-            }
-            return null;
-        }
-
-        async function tryLoadTemplates() {
-            const savedTpl1 = localStorage.getItem('egger_tpl_1');
-            const savedTpl2 = localStorage.getItem('egger_tpl_2');
-
-            // ПРИОРИТЕТ: сначала твои эталонные файлы из корня репозитория!
-            if (savedTpl1) {
-                state.template1Image = await loadImageFromSrc(savedTpl1);
-                updateTemplateBadge(1, 'Загружен в браузер');
-            } else {
-                const noBevelCandidates = [
-                    './template_no_bevel.png',
-                    './Шаблон 7.png',
-                    './Шаблон3.png',
-                    './Шаблон.png'
-                ];
-                state.template1Image = await loadCachedTemplate(noBevelCandidates);
-                if (state.template1Image) {
-                    updateTemplateBadge(1, 'Эталон PNG (Без фаски)');
-                }
-            }
-
-            if (savedTpl2) {
-                state.template2Image = await loadImageFromSrc(savedTpl2);
-                updateTemplateBadge(2, 'Загружен в браузер');
-            } else {
-                const bevelCandidates = [
-                    './template_bevel.png',
-                    './Шаблон2.png',
-                    './Шаблон 1_2.png',
-                    './Шаблон 6.png',
-                    './Шаблон 4.png',
-                    './Шаблон 5.png'
-                ];
-                state.template2Image = await loadCachedTemplate(bevelCandidates);
-                if (state.template2Image) {
-                    updateTemplateBadge(2, 'Эталон PNG (С фаской V4)');
-                }
-            }
-
-            await Promise.all([
-                tryLoadRepoFont('Lato', ['./Lato-BlackItalic.ttf', './assets/fonts/Lato-BlackItalic.ttf'], { weight: '900', style: 'italic' }),
-                tryLoadRepoFont('Lato', ['./Lato-Bold.ttf', './assets/fonts/Lato-Bold.ttf'], { weight: '700', style: 'normal' }),
-                tryLoadRepoFont('Lato', ['./Lato-BoldItalic.ttf', './assets/fonts/Lato-BoldItalic.ttf'], { weight: '700', style: 'italic' }),
-                tryLoadRepoFont('Lato', ['./Lato-Regular.ttf', './assets/fonts/Lato-Regular.ttf'], { weight: '400', style: 'normal' })
-            ]);
-        }
-
-        async function tryLoadRepoFont(family, urls, descriptors) {
-            const list = Array.isArray(urls) ? urls : [urls];
-            for (const url of list) {
-                try {
-                    const font = new FontFace(family, `url(${encodeURI(url)})`, descriptors);
-                    const loaded = await font.load();
-                    document.fonts.add(loaded);
-                    return;
-                } catch (e) {}
-            }
-        }
-
-        function loadImageFromSrc(src) {
-            return new Promise((resolve) => {
-                const img = new Image();
-                img.crossOrigin = 'anonymous';
-                img.onload = () => resolve(img);
-                img.onerror = () => resolve(null);
-                img.src = src;
-            });
-        }
-
-        async function tryFetchImage(url) {
-            try {
-                const res = await fetch(url);
-                if (!res.ok) return null;
-                const blob = await res.blob();
-                const objUrl = URL.createObjectURL(blob);
-                return await loadImageFromSrc(objUrl);
-            } catch {
-                return null;
-            }
-        }
-
-        function createProceduralOakTexture() {
-            const c = document.createElement('canvas');
-            c.width = 1000;
-            c.height = 1000;
-            const ctx = c.getContext('2d');
-            ctx.fillStyle = '#C8B598';
-            ctx.fillRect(0, 0, 1000, 1000);
-            const plankWidths = [160, 210, 210, 210, 210];
-            let curX = 0;
-            plankWidths.forEach((w, idx) => {
-                const nextX = curX + w;
-                const toneShift = (idx % 2 === 0) ? 6 : -5;
-                ctx.fillStyle = `rgb(${200 + toneShift}, ${181 + toneShift}, ${152 + toneShift})`;
-                ctx.fillRect(curX, 0, w, 1000);
-                for (let i = 0; i < 180; i++) {
-                    const x = curX + (Math.sin(i * 19.3 + idx) * 0.5 + 0.5) * w;
-                    ctx.strokeStyle = i % 3 === 0 ? 'rgba(135, 112, 84, 0.16)' : 'rgba(230, 215, 192, 0.14)';
-                    ctx.lineWidth = 1 + (i % 3);
-                    ctx.beginPath();
-                    ctx.moveTo(x, 0);
-                    ctx.bezierCurveTo(x + Math.sin(i) * 12, 330, x - Math.cos(i) * 12, 660, x, 1000);
-                    ctx.stroke();
-                }
-                ctx.strokeStyle = 'rgba(105, 86, 64, 0.45)';
-                ctx.lineWidth = 1.5;
-                ctx.beginPath();
-                ctx.moveTo(nextX, 0);
-                ctx.lineTo(nextX, 1000);
-                ctx.stroke();
-                curX = nextX;
-            });
-            return c;
-        }
-
-        // ============================================================================
-        // ОСНОВНОЙ РЕНДЕР КАРТОЧКИ 1000x1000 PX
-        // ============================================================================
-        function renderCard() {
-            const canvas = document.getElementById('cardCanvas');
-            const ctx = canvas.getContext('2d');
-            const W = 1000, H = 1000;
-
-            ctx.clearRect(0, 0, W, H);
-
-            // 1. ФОНОВАЯ ТЕКСТУРА ДЕКОРА (Center-Crop 1000x1000)
-            if (state.decorImage) {
-                drawImageCover(ctx, state.decorImage, 0, 0, W, H);
-            }
-
-            // 2. ВЫБОР ЭТАЛОННОГО ШАБЛОНА PNG
-            const activeTemplateImg = state.hasBevel ? state.template2Image : state.template1Image;
-
-            if (activeTemplateImg) {
-                ctx.drawImage(activeTemplateImg, 0, 0, W, H);
-                maskBakedTemplateText(ctx, state.hasBevel);
-            } else {
-                drawVectorEggerTemplate(ctx, state.hasBevel);
-            }
-
-            // 3. НАЛОЖЕНИЕ ДИНАМИЧЕСКИХ ТЕКСТОВ ШРИФТОМ LATO
-            drawDynamicTexts(ctx);
-
-            // 4. Обновление имени файла
-            const titleVal = (document.getElementById('titleInput').value || 'Шаблон_карточки').trim();
-            document.getElementById('downloadFilenamePreview').textContent = `${titleVal}.png`;
-            document.getElementById('activeTemplateIndicator').textContent = state.hasBevel
-                ? 'Эталон: С фаской V4'
-                : 'Эталон: Без Фаски';
-        }
-
-        // Точечная маскировка старых надписей точным цветом плашки #F4F3EA
-        function maskBakedTemplateText(ctx, hasBevel) {
-            const debug = document.getElementById('debugMasksToggle').checked;
-            // Точный цвет нижней плашки твоих оригинальных шаблонов: rgb(244, 243, 234) = #F4F3EA
-            const creamColor = '#F4F3EA';
-            const bevelInner = document.getElementById('bevelInnerInput').value.trim().toUpperCase();
-
-            const masks = [
-                // 0. Центральный заголовок "EHL135 Дуб Репино" / "EHL032 Дуб Альвадос"
-                { x: 160, y: 804, w: 680, h: 45 },
-
-                // 1. Иконка 1 (Толщина): текст "8 мм" / "10 мм" / "12 мм" над стрелкой (стрелка начинается с y=904)
-                { x: 75, y: 876, w: 66, h: 25 },
-                // Иконка 1: нижняя подпись "Толщина / 8мм"
-                { x: 45, y: 952, w: 120, h: 45 },
-
-                // 2. Иконка 2 (Класс нагрузки): верхняя подпись "Класс Нагрузки / 32-33 Класс"
-                { x: 168, y: 856, w: 148, h: 42 },
-                // Иконка 2: число "32" / "33" внутри капли (верх дуги на y=903, слово КЛАСС на y=953)
-                { x: 202, y: 915, w: 56, h: 33 },
-                // Иконка 2: слово "КЛАСС" внутри капли
-                { x: 198, y: 951, w: 64, h: 18 },
-
-                // 3. Иконка 3 (AC4/AC5): текст внутри капли
-                { x: 327, y: 887, w: 74, h: 34 },
-                // Иконка 3: нижняя подпись "Износостойкость / AC4-5 Класс"
-                { x: 290, y: 952, w: 162, h: 45 },
-
-                // 4. Иконка 4 (Эко E1): верхняя подпись "Класс Эко / Безопасности"
-                { x: 446, y: 856, w: 132, h: 42 },
-                // Иконка 4: зеленый текст "E1" внутри капли
-                { x: 473, y: 922, w: 66, h: 45 },
-
-                // 5. Иконка 5 (Влагостойкий): нижняя подпись
-                { x: 575, y: 956, w: 146, h: 40 },
-
-                // 6. Иконка 6 (Фаска): верхняя подпись "Без Фаски" / "С фаской"
-                { x: 722, y: 868, w: 116, h: 27 },
-
-                // 7. Иконка 7 (CLIC it): нижняя подпись
-                { x: 855, y: 956, w: 118, h: 40 }
-            ];
-
-            // Если выбран шаблон с фаской, но индекс изменен с заводского V4 на другой:
-            if (hasBevel && bevelInner !== 'V4') {
-                masks.push({ x: 758, y: 913, w: 35, h: 18 });
-                masks.push({ x: 763, y: 931, w: 28, h: 4 });
-            }
-
-            masks.forEach(m => {
-                ctx.fillStyle = creamColor;
-                ctx.fillRect(m.x, m.y, m.w, m.h);
-                if (debug) {
-                    ctx.strokeStyle = 'rgba(239, 68, 68, 0.8)';
-                    ctx.lineWidth = 1.5;
-                    ctx.strokeRect(m.x, m.y, m.w, m.h);
-                }
-            });
-        }
-
-        // Отрисовка всех текстов строго по координатам твоих 7 эталонных шаблонов
-        function drawDynamicTexts(ctx) {
-            const darkBlue = '#18354A';
-            const ecoGreen = '#0D7A11';
-
-            const title = document.getElementById('titleInput').value.trim();
-            const thickness = document.getElementById('thicknessInput').value.trim().replace(/\s*мм$/i, '') || '8';
-            const loadClass = document.getElementById('loadClassInput').value.trim() || '33';
-            const acRating = document.getElementById('acInput').value.trim() || 'AC5';
-
-            const ecoLine1 = document.getElementById('ecoLine1').value.trim();
-            const ecoLine2 = document.getElementById('ecoLine2').value.trim();
-            const ecoValue = document.getElementById('ecoValue').value.trim();
-
-            const waterBottom1 = document.getElementById('waterBottom1').value.trim();
-            const waterBottom2 = document.getElementById('waterBottom2').value.trim();
-
-            const bevelLabel = document.getElementById('bevelLabelInput').value.trim();
-            const bevelInner = document.getElementById('bevelInnerInput').value.trim();
-            const lockName = document.getElementById('lockInput').value.trim();
-
-            ctx.textAlign = 'center';
-            ctx.textBaseline = 'middle';
-
-            // 1. ЦЕНТРАЛЬНЫЙ ЗАГОЛОВОК ДЕКОРА (Lato Black Italic, #18354A, Y=824)
-            if (title) {
-                ctx.fillStyle = darkBlue;
-                const titleFontSize = title.length > 34 ? 30 : (title.length > 26 ? 34 : 37);
-                ctx.font = `italic 900 ${titleFontSize}px "Lato", sans-serif`;
-                ctx.fillText(title, 500, 824);
-            }
-
-            // 2. ИКОНКА 1: ТОЛЩИНА (По эталонам Шаблон 4 "10 мм" и Шаблон 5 "12 мм")
-            ctx.fillStyle = darkBlue;
-            const thickInnerText = `${thickness} мм`;
-            let thickFontSize = 24;
-            if (thickness.length >= 3) thickFontSize = 18;      // напр. "13.5 мм"
-            else if (thickness.length === 2) thickFontSize = 21.5; // "10 мм", "12 мм" как в Шаблоне 4 и 5
-            ctx.font = `italic 900 ${thickFontSize}px "Lato", sans-serif`;
-            ctx.fillText(thickInnerText, 108.5, 890);
-
-            // Под каплей: "Толщина" / "8мм" ("10мм", "12мм")
-            ctx.font = 'italic 900 18.5px "Lato", sans-serif';
-            ctx.fillText('Толщина', 104, 964);
-            ctx.fillText(`${thickness}мм`, 104, 983);
-
-            // 3. ИКОНКА 2: КЛАСС НАГРУЗКИ (По эталонам Шаблон 6 "32" и Шаблон 2 "33")
-            ctx.font = 'italic 900 18px "Lato", sans-serif';
-            ctx.fillText('Класс Нагрузки', 242, 869);
-            ctx.fillText(`${loadClass} Класс`, 242, 888);
-
-            // Внутри капли: "32" / "33" и "КЛАСС"
-            ctx.font = 'normal 700 36px "Lato", sans-serif';
-            ctx.fillText(loadClass, 230, 933);
-            ctx.font = 'normal 400 18.5px "Lato", sans-serif';
-            ctx.fillText('КЛАСС', 230, 960);
-
-            // 4. ИКОНКА 3: ИЗНОСОСТОЙКОСТЬ (AC4 / AC5)
-            const acFontSize = acRating.length > 3 ? 26 : 36;
-            ctx.font = `normal 700 ${acFontSize}px "Lato", sans-serif`;
-            ctx.fillText(acRating, 363, 905);
-
-            ctx.font = 'italic 900 18.5px "Lato", sans-serif';
-            ctx.fillText('Износостойкость', 371, 964);
-            ctx.fillText(`${acRating} Класс`, 371, 983);
-
-            // 5. ИКОНКА 4: ЭКО БЕЗОПАСНОСТЬ (E1)
-            ctx.fillStyle = darkBlue;
-            ctx.font = 'italic 900 18px "Lato", sans-serif';
-            ctx.fillText(ecoLine1, 512, 869);
-            ctx.fillText(ecoLine2, 512, 888);
-
-            ctx.fillStyle = ecoGreen;
-            if (ecoValue.length <= 2) {
-                ctx.font = 'normal 900 52px "Lato", sans-serif';
-                ctx.fillText(ecoValue, 506, 948);
-            } else {
-                ctx.font = 'normal 900 32px "Lato", sans-serif';
-                ctx.fillText(ecoValue, 505, 947);
-            }
-
-            // 6. ИКОНКА 5: ВЛАГОСТОЙКИЙ
-            ctx.fillStyle = darkBlue;
-            ctx.font = 'italic 900 18.5px "Lato", sans-serif';
-            if (waterBottom2) {
-                ctx.fillText(waterBottom1, 647, 964);
-                ctx.fillStyle = '#0369A1';
-                ctx.fillText(waterBottom2, 647, 983);
-            } else {
-                ctx.fillText(waterBottom1, 647, 971);
-            }
-
-            // 7. ИКОНКА 6: ФАСКА ("С фаской" / "Без Фаски")
-            ctx.fillStyle = darkBlue;
-            ctx.font = 'italic 900 18.5px "Lato", sans-serif';
-            ctx.fillText(bevelLabel, 781, 882);
-
-            if (state.hasBevel && bevelInner) {
-                const hasRealBevelTpl = Boolean(state.template2Image);
-                // Если загружен оригинальный PNG template_bevel.png и стоит "V4", заводской "V4" не трогаем
-                if (!(hasRealBevelTpl && bevelInner.toUpperCase() === 'V4')) {
-                    ctx.fillStyle = darkBlue;
-                    if (bevelInner.toUpperCase() === 'V4') {
-                        ctx.font = 'normal 700 31px "Lato", sans-serif';
-                        ctx.fillText('V', 770, 926);
-                        ctx.font = 'normal 700 23px "Lato", sans-serif';
-                        ctx.fillText('4', 786, 929);
-                    } else {
-                        ctx.font = 'normal 700 24px "Lato", sans-serif';
-                        ctx.fillText(bevelInner, 776, 925);
-                    }
-                }
-            }
-
-            // 8. ИКОНКА 7: ЗАМОК ("CLIC it")
-            ctx.fillStyle = darkBlue;
-            ctx.font = 'italic 900 18.5px "Lato", sans-serif';
-            ctx.fillText(lockName, 914, 971);
-        }
-
-        // Встроенный резервный векторный шаблон (на случай открытия без PNG)
-        function drawVectorEggerTemplate(ctx, hasBevel) {
-            const cream = '#F4F3EA';
-            const yellow = '#F3C95B';
-            const darkBlue = '#18354A';
-
-            // 1. ВЕРХНИЙ ЛЕВЫЙ БЕЙДЖ "ЭГГЕР"
-            ctx.save();
-            ctx.beginPath();
-            ctx.moveTo(0, 0);
-            ctx.lineTo(283, 0);
-            ctx.lineTo(283, 42);
-            ctx.quadraticCurveTo(283, 95, 225, 95);
-            ctx.lineTo(58, 95);
-            ctx.quadraticCurveTo(0, 95, 0, 42);
-            ctx.closePath();
-            ctx.fillStyle = cream;
-            ctx.fill();
-            ctx.lineWidth = 4;
-            ctx.strokeStyle = yellow;
-            ctx.stroke();
-
-            ctx.fillStyle = '#F04E45';
-            ctx.fillRect(42, 12, 203, 25);
-
-            ctx.fillStyle = '#2B0908';
-            ctx.font = 'normal 900 42px "Lato", sans-serif';
-            ctx.textAlign = 'center';
-            ctx.textBaseline = 'middle';
-            ctx.fillText('Э Г Г Е Р', 143, 66);
-            ctx.restore();
-
-            // 2. ПРАВЫЙ БЕЙДЖ "Сделано в России"
-            ctx.save();
-            ctx.beginPath();
-            ctx.moveTo(1005, 638);
-            ctx.lineTo(796, 638);
-            ctx.quadraticCurveTo(753, 638, 753, 680);
-            ctx.quadraticCurveTo(753, 721, 796, 721);
-            ctx.lineTo(1005, 721);
-            ctx.closePath();
-            ctx.fillStyle = cream;
-            ctx.fill();
-            ctx.lineWidth = 4;
-            ctx.strokeStyle = yellow;
-            ctx.stroke();
-
-            ctx.save();
-            ctx.translate(783, 680);
-            ctx.fillStyle = '#E5E7EB';
-            ctx.beginPath();
-            ctx.ellipse(0, -2, 11, 29, 0, 0, Math.PI * 2);
-            ctx.fill();
-            ctx.rotate(0.58);
-            ctx.fillStyle = '#0095FF';
-            ctx.beginPath();
-            ctx.ellipse(8, -2, 12, 29, 0, 0, Math.PI * 2);
-            ctx.fill();
-            ctx.restore();
-
-            ctx.fillStyle = '#FF0000';
-            ctx.beginPath();
-            ctx.ellipse(809, 699, 32, 13, 0, 0, Math.PI * 2);
-            ctx.fill();
-
-            ctx.fillStyle = '#000000';
-            ctx.textAlign = 'left';
-            ctx.textBaseline = 'middle';
-            ctx.font = 'normal 700 32px "Lato", sans-serif';
-            ctx.fillText('Сделано', 850, 665);
-            ctx.fillText('в России', 850, 697);
-            ctx.restore();
-
-            // 3. НИЖНЯЯ ПЛАШКА
-            ctx.save();
-            ctx.beginPath();
-            ctx.moveTo(0, 1005);
-            ctx.lineTo(0, 880);
-            ctx.quadraticCurveTo(0, 795, 92, 795);
-            ctx.lineTo(908, 795);
-            ctx.quadraticCurveTo(1000, 795, 1000, 880);
-            ctx.lineTo(1000, 1005);
-            ctx.closePath();
-            ctx.fillStyle = cream;
-            ctx.fill();
-            ctx.lineWidth = 8;
-            ctx.strokeStyle = yellow;
-            ctx.stroke();
-            ctx.restore();
-
-            // 4. КОНТУРЫ 7 ИКОНОК-КАПЕЛЬ
-            const drops = [
-                { cx: 109, cy: 902 },
-                { cx: 232, cy: 941 },
-                { cx: 365, cy: 905 },
-                { cx: 505, cy: 945 },
-                { cx: 648, cy: 901 },
-                { cx: 777, cy: 943 },
-                { cx: 914, cy: 902 }
-            ];
-
-            drops.forEach((d, idx) => {
-                drawDropFrame(ctx, d.cx, d.cy, 43, darkBlue);
-                if (idx === 0) {
-                    ctx.save();
-                    ctx.strokeStyle = darkBlue;
-                    ctx.lineWidth = 4.5;
-                    ctx.lineCap = 'round';
-                    ctx.lineJoin = 'round';
-                    ctx.beginPath();
-                    ctx.moveTo(86, 916);
-                    ctx.lineTo(130, 916);
-                    ctx.moveTo(96, 906);
-                    ctx.lineTo(85, 916);
-                    ctx.lineTo(96, 926);
-                    ctx.moveTo(120, 906);
-                    ctx.lineTo(131, 916);
-                    ctx.lineTo(120, 926);
-                    ctx.stroke();
-                    ctx.restore();
-                } else if (idx === 4) {
-                    ctx.save();
-                    ctx.fillStyle = '#00A8E8';
-                    ctx.beginPath();
-                    ctx.moveTo(648, 865);
-                    ctx.bezierCurveTo(665, 892, 673, 905, 673, 916);
-                    ctx.arc(648, 916, 24, 0, Math.PI, false);
-                    ctx.bezierCurveTo(623, 905, 631, 892, 648, 865);
-                    ctx.fill();
-
-                    ctx.strokeStyle = '#FFFFFF';
-                    ctx.lineWidth = 2.8;
-                    ctx.lineCap = 'round';
-                    ctx.lineJoin = 'round';
-                    ctx.beginPath();
-                    ctx.moveTo(640, 913);
-                    ctx.lineTo(647, 920);
-                    ctx.lineTo(662, 903);
-                    ctx.stroke();
-
-                    ctx.beginPath();
-                    ctx.arc(648, 916, 18, 0.3, Math.PI - 0.3);
-                    ctx.stroke();
-                    ctx.restore();
-                } else if (idx === 5) {
-                    ctx.save();
-                    ctx.strokeStyle = darkBlue;
-                    if (hasBevel) {
-                        ctx.lineWidth = 3.2;
-                        ctx.beginPath();
-                        ctx.moveTo(737, 935);
-                        ctx.lineTo(754, 935);
-                        ctx.lineTo(774, 959);
-                        ctx.lineTo(774, 971);
-                        ctx.lineTo(741, 971);
-                        ctx.moveTo(816, 935);
-                        ctx.lineTo(798, 935);
-                        ctx.lineTo(778, 959);
-                        ctx.lineTo(778, 971);
-                        ctx.lineTo(812, 971);
-                        ctx.stroke();
-                    } else {
-                        ctx.lineWidth = 2;
-                        ctx.beginPath();
-                        ctx.moveTo(738, 947);
-                        ctx.lineTo(815, 947);
-                        ctx.moveTo(740, 960);
-                        ctx.lineTo(813, 960);
-                        ctx.moveTo(777, 903);
-                        ctx.lineTo(777, 947);
-                        ctx.stroke();
-                    }
-                    ctx.restore();
-                } else if (idx === 6) {
-                    ctx.save();
-                    ctx.strokeStyle = darkBlue;
-                    ctx.lineWidth = 2.2;
-                    ctx.lineJoin = 'round';
-                    ctx.beginPath();
-                    ctx.moveTo(875, 907);
-                    ctx.lineTo(903, 907);
-                    ctx.lineTo(903, 916);
-                    ctx.lineTo(895, 916);
-                    ctx.lineTo(895, 922);
-                    ctx.lineTo(918, 922);
-                    ctx.lineTo(918, 914);
-                    ctx.lineTo(923, 914);
-                    ctx.lineTo(923, 928);
-                    ctx.lineTo(880, 928);
-                    ctx.moveTo(954, 884);
-                    ctx.lineTo(914, 900);
-                    ctx.lineTo(916, 912);
-                    ctx.lineTo(928, 908);
-                    ctx.lineTo(935, 900);
-                    ctx.lineTo(942, 905);
-                    ctx.lineTo(954, 901);
-                    ctx.stroke();
-                    ctx.restore();
-                }
-            });
-        }
-
-        function drawDropFrame(ctx, cx, cy, r, color) {
-            ctx.save();
-            ctx.strokeStyle = color;
-            ctx.lineWidth = 6;
-            ctx.lineJoin = 'round';
-            ctx.beginPath();
-            ctx.arc(cx, cy, r, 0, -Math.PI / 2, false);
-            ctx.lineTo(cx + r - 6, cy - r);
-            ctx.quadraticCurveTo(cx + r, cy - r, cx + r, cy - r + 6);
-            ctx.closePath();
-            ctx.stroke();
-            ctx.restore();
-        }
-
-        function drawImageCover(ctx, img, x, y, w, h) {
-            const imgW = img.width || img.naturalWidth;
-            const imgH = img.height || img.naturalHeight;
-            if (!imgW || !imgH) return;
-            const scale = Math.max(w / imgW, h / imgH);
-            const nw = imgW * scale;
-            const nh = imgH * scale;
-            const nx = x + (w - nw) / 2;
-            const ny = y + (h - nh) / 2;
-            ctx.drawImage(img, nx, ny, nw, nh);
-        }
-
-        // ============================================================================
-        // ПРЕСЕТЫ ПО 7 ЭТАЛОННЫМ ШАБЛОНАМ И УМНЫЙ ПАРСЕР ИМЕН ФАЙЛОВ
-        // ============================================================================
-        function applyStandardTemplate(num) {
-            setFourthIconPreset('E1');
-            setWaterPreset('std');
-            document.getElementById('lockInput').value = 'CLIC it';
-
-            if (num === 1) {
-                // Шаблон.png: 8 мм, 32 Класс, AC5, Без Фаски
-                document.getElementById('thicknessInput').value = '8';
-                document.getElementById('loadClassInput').value = '32';
-                document.getElementById('acInput').value = 'AC5';
-                setBevelMode(false);
-            } else if (num === 2) {
-                // Шаблон 1_2.png / Шаблон2.png: 8 мм, 33 Класс, AC5, С фаской V4
-                document.getElementById('thicknessInput').value = '8';
-                document.getElementById('loadClassInput').value = '33';
-                document.getElementById('acInput').value = 'AC5';
-                setBevelMode(true);
-            } else if (num === 4) {
-                // Шаблон 4.png: 10 мм, 33 Класс, AC5, С фаской V4
-                document.getElementById('thicknessInput').value = '10';
-                document.getElementById('loadClassInput').value = '33';
-                document.getElementById('acInput').value = 'AC5';
-                setBevelMode(true);
-            } else if (num === 5) {
-                // Шаблон 5.png: 12 мм, 33 Класс, AC5, С фаской V4
-                document.getElementById('thicknessInput').value = '12';
-                document.getElementById('loadClassInput').value = '33';
-                document.getElementById('acInput').value = 'AC5';
-                setBevelMode(true);
-            } else if (num === 6) {
-                // Шаблон 6.png: 8 мм, 32 Класс, AC4, С фаской V4
-                document.getElementById('thicknessInput').value = '8';
-                document.getElementById('loadClassInput').value = '32';
-                document.getElementById('acInput').value = 'AC4';
-                setBevelMode(true);
-            } else if (num === 7 || num === 3) {
-                // Шаблон 3.png / Шаблон 7.png: 8 мм, 32 Класс, AC4, Без Фаски
-                document.getElementById('thicknessInput').value = '8';
-                document.getElementById('loadClassInput').value = '32';
-                document.getElementById('acInput').value = 'AC4';
-                setBevelMode(false);
-            }
-            renderCard();
-            showToast(`Применен стандарт Шаблона ${num}`);
-        }
-
-        // Автоматическое извлечение толщины и чистого названия декора из имени файла
-        // Например: "8 мм EPL034 Дуб Нарва_upscayl_2x_upscayl-standard-4x.png" -> толщина "8", заголовок "EPL034 Дуб Нарва"
-        function parseFilenameMetadata(filename) {
-            let base = filename.replace(/\.[^/.]+$/, '').trim();
-            // Убираем суффиксы Upscayl
-            base = base.replace(/_upscayl.*$/i, '').trim();
-
-            let detectedThickness = null;
-            const prefixThick = base.match(/^(\d{1,2}(?:[.,]\d+)?)\s*мм\s+(.+)$/i);
-            if (prefixThick) {
-                detectedThickness = prefixThick[1].replace(',', '.');
-                base = prefixThick[2].trim();
-            }
-
-            return {
-                cleanTitle: base,
-                thickness: detectedThickness
-            };
-        }
-
-        function parseRawTextLocally() {
-            const raw = document.getElementById('rawSpecsInput').value.trim();
-            if (!raw) return;
-
-            const lines = raw.split(/\n+/).map(l => l.trim()).filter(Boolean);
-
-            const titleLine = lines.find(l => /(EHL|EPL|EL|EDF|Дуб|Ясень|Сосна|Орех|Бетон|Камень)/i.test(l) && !/Толщина|Класс|Фаска|Влагостойк|Гарантия|Замков/i.test(l)) || lines[0];
-            if (titleLine) {
-                const parsed = parseFilenameMetadata(titleLine.replace(/^(Артикул|Декор|Название)\s*[:\-–]\s*/i, '').trim());
-                document.getElementById('titleInput').value = parsed.cleanTitle;
-                if (parsed.thickness) {
-                    document.getElementById('thicknessInput').value = parsed.thickness;
-                }
-            }
-
-            const thickMatch = raw.match(/Толщина[^\d\n]*(\d+(?:[.,]\d+)?)\s*мм/i) || raw.match(/\b(\d{1,2}(?:[.,]\d+)?)\s*мм\b/i);
-            if (thickMatch) {
-                document.getElementById('thicknessInput').value = thickMatch[1].replace(',', '.');
-            }
-
-            const classMatch = raw.match(/Класс[^\d\n]*(31|32|33|34)/i) || raw.match(/\b(31|32|33|34)\s*(?:кл|класс)/i);
-            let detectedClass = null;
-            if (classMatch) {
-                detectedClass = classMatch[1];
-                document.getElementById('loadClassInput').value = detectedClass;
-            }
-
-            const acMatch = raw.match(/\b(AC\s*[3456]|АС\s*[3456])\b/i);
-            if (acMatch) {
-                document.getElementById('acInput').value = acMatch[1].toUpperCase().replace('А', 'A').replace('С', 'C').replace(/\s+/g, '');
-            } else if (detectedClass) {
-                const acMap = { '31': 'AC3', '32': 'AC4', '33': 'AC5', '34': 'AC6' };
-                if (acMap[detectedClass]) document.getElementById('acInput').value = acMap[detectedClass];
-            }
-
-            if (/Фаска\s*[:\-–]?\s*(Нет|Без\s*фаски)/i.test(raw) || /Без\s+фаски/i.test(raw)) {
-                setBevelMode(false);
-            } else if (/Фаска\s*[:\-–]?\s*(Да|Есть|4V|V4|С\s*фаской)/i.test(raw) || /\b(4V|V4)\b/i.test(raw)) {
-                setBevelMode(true);
-            }
-
-            renderCard();
-            showToast('Характеристики применены!');
-        }
-
-        function setTitleValue(val) {
-            document.getElementById('titleInput').value = val;
-            renderCard();
-        }
-
-        function setField(id, val) {
-            document.getElementById(id).value = val;
-            renderCard();
-        }
-
-        function setLoadClass(cls) {
-            document.getElementById('loadClassInput').value = cls;
-            const acMap = { '31': 'AC3', '32': 'AC4', '33': 'AC5', '34': 'AC6' };
-            if (acMap[cls]) {
-                document.getElementById('acInput').value = acMap[cls];
-            }
-            renderCard();
-        }
-
-        function setBevelMode(hasBevel) {
-            state.hasBevel = hasBevel;
-            document.getElementById('bevelLabelInput').value = hasBevel ? 'С фаской' : 'Без Фаски';
-            document.getElementById('bevelInnerInput').value = hasBevel ? 'V4' : '';
-            updateBevelButtonsUI();
-            renderCard();
-        }
-
-        function updateBevelButtonsUI() {
-            const btnNo = document.getElementById('btnBevelNo');
-            const btnYes = document.getElementById('btnBevelYes');
-            if (state.hasBevel) {
-                btnYes.className = 'py-1.5 px-2 rounded-lg text-xs font-bold border bg-amber-500/20 border-amber-500 text-amber-300 transition';
-                btnNo.className = 'py-1.5 px-2 rounded-lg text-xs font-medium border bg-slate-900 border-slate-700 text-slate-400 hover:text-slate-200 transition';
-            } else {
-                btnNo.className = 'py-1.5 px-2 rounded-lg text-xs font-bold border bg-amber-500/20 border-amber-500 text-amber-300 transition';
-                btnYes.className = 'py-1.5 px-2 rounded-lg text-xs font-medium border bg-slate-900 border-slate-700 text-slate-400 hover:text-slate-200 transition';
-            }
-        }
-
-        function setFourthIconPreset(mode, customVal) {
-            if (mode === 'E1') {
-                document.getElementById('ecoLine1').value = 'Класс Эко';
-                document.getElementById('ecoLine2').value = 'Безопасности';
-                document.getElementById('ecoValue').value = 'E1';
-            } else if (mode === 'KM5') {
-                document.getElementById('ecoLine1').value = 'Пожарная';
-                document.getElementById('ecoLine2').value = 'Безопасность';
-                document.getElementById('ecoValue').value = customVal || 'КМ5';
-            }
-            renderCard();
-        }
-
-        function setWaterPreset(hours) {
-            if (hours === 'std') {
-                document.getElementById('waterBottom1').value = 'Влагостойкий';
-                document.getElementById('waterBottom2').value = '';
-            } else {
-                document.getElementById('waterBottom1').value = 'Водостойкий';
-                document.getElementById('waterBottom2').value = `${hours} часа`;
-            }
-            renderCard();
-        }
-
-        function loadPreset(code) {
-            if (code === 'EHL032') {
-                document.getElementById('rawSpecsInput').value = `EHL032 Дуб Альвадос\nТолщина, мм - 8 мм\nКласс - 33 кл\nИзносостойкость - AC5\nФаска - Да\nЗамковое соединение: CLIC it`;
-                parseRawTextLocally();
-            } else if (code === 'EHL135') {
-                document.getElementById('rawSpecsInput').value = `EHL135 Дуб Репино\nТолщина, мм - 8 мм\nКласс - 33 кл\nИзносостойкость - AC5\nФаска - Да\nЗамковое соединение: CLIC it`;
-                parseRawTextLocally();
-            }
-        }
-
-        // ============================================================================
-        // ЗАГРУЗКА ФОТО ТЕКСТУР И ПАКЕТНАЯ ОЧЕРЕДЬ
-        // ============================================================================
-        function setupDragAndDrop() {
-            const dz = document.getElementById('dropZone');
-            ['dragenter', 'dragover'].forEach(evt => {
-                dz.addEventListener(evt, e => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    dz.classList.add('border-amber-400', 'bg-amber-500/10');
-                });
-            });
-            ['dragleave', 'drop'].forEach(evt => {
-                dz.addEventListener(evt, e => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    dz.classList.remove('border-amber-400', 'bg-amber-500/10');
-                });
-            });
-            dz.addEventListener('drop', e => {
-                const files = e.dataTransfer?.files;
-                if (files && files.length > 0) {
-                    processTextureFiles(files);
-                }
-            });
-        }
-
-        function handleTextureUpload(event) {
-            const files = event.target.files;
-            if (files && files.length > 0) {
-                processTextureFiles(files);
-            }
-        }
-
-        async function processTextureFiles(fileList) {
-            const files = Array.from(fileList).filter(f => f.type.startsWith('image/'));
-            if (files.length === 0) return;
-
-            for (const file of files) {
-                const dataUrl = await readFileAsDataURL(file);
-                const img = await loadImageFromSrc(dataUrl);
-                const meta = parseFilenameMetadata(file.name);
-                state.photoQueue.push({
-                    name: file.name,
-                    title: meta.cleanTitle,
-                    thickness: meta.thickness,
-                    img,
-                    dataUrl
-                });
-            }
-
-            selectQueueItem(state.photoQueue.length - 1);
-            renderPhotoQueueUI();
-            showToast(`Загружено текстур: ${files.length} шт.`);
-        }
-
-        function selectQueueItem(index) {
-            const item = state.photoQueue[index];
-            if (!item) return;
-            state.activeQueueIndex = index;
-            state.decorImage = item.img;
-
-            if (document.getElementById('autoTitleFromFilename').checked) {
-                if (item.title) document.getElementById('titleInput').value = item.title;
-                if (item.thickness) document.getElementById('thicknessInput').value = item.thickness;
-            }
-            renderPhotoQueueUI();
-            renderCard();
-        }
-
-        function renderPhotoQueueUI() {
-            const container = document.getElementById('photoQueueContainer');
-            const list = document.getElementById('photoQueueList');
-            const countEl = document.getElementById('queueCount');
-
-            if (state.photoQueue.length === 0) {
-                container.classList.add('hidden');
-                return;
-            }
-
-            container.classList.remove('hidden');
-            countEl.textContent = state.photoQueue.length;
-            list.innerHTML = '';
-
-            state.photoQueue.forEach((item, idx) => {
-                const active = idx === state.activeQueueIndex;
-                const btn = document.createElement('button');
-                btn.onclick = () => selectQueueItem(idx);
-                btn.className = `flex items-center gap-2 px-2.5 py-1.5 rounded-xl border text-xs shrink-0 transition ${
-                    active 
-                        ? 'bg-amber-500/20 border-amber-500 text-amber-300 font-semibold' 
-                        : 'bg-slate-950 border-slate-800 text-slate-400 hover:text-slate-200'
-                }`;
-                btn.innerHTML = `
-                    <img src="${item.dataUrl}" class="w-6 h-6 rounded object-cover border border-slate-700">
-                    <span class="max-w-[140px] truncate">${item.title}</span>
-                `;
-                list.appendChild(btn);
-            });
-        }
-
-        // ============================================================================
-        // ЗАГРУЗКА ПОЛЬЗОВАТЕЛЬСКИХ ШАБЛОНОВ PNG И ШРИФТОВ TTF
-        // ============================================================================
-        async function uploadCustomTemplate(num, event) {
-            const file = event.target.files?.[0];
-            if (!file) return;
-
-            const dataUrl = await readFileAsDataURL(file);
-            const img = await loadImageFromSrc(dataUrl);
-            if (!img) return;
-
-            if (num === 1) {
-                state.template1Image = img;
-                try { localStorage.setItem('egger_tpl_1', dataUrl); } catch (e) {}
-                updateTemplateBadge(1, file.name);
-            } else {
-                state.template2Image = img;
-                try { localStorage.setItem('egger_tpl_2', dataUrl); } catch (e) {}
-                updateTemplateBadge(2, file.name);
-            }
-
-            renderCard();
-            showToast(`Шаблон ${num} (${file.name}) сохранен!`);
-        }
-
-        function updateTemplateBadge(num, text) {
-            const el = document.getElementById(num === 1 ? 'tpl1Badge' : 'tpl2Badge');
-            if (el) {
-                el.textContent = text;
-                el.className = 'text-[10px] px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/30';
-            }
-        }
-
-        async function uploadCustomFonts(event) {
-            const files = Array.from(event.target.files || []);
-            if (files.length === 0) return;
-
-            for (const file of files) {
-                const buffer = await file.arrayBuffer();
-                const name = file.name.toLowerCase();
-                let descriptors = { weight: '900', style: 'italic' };
-
-                if (name.includes('blackitalic')) descriptors = { weight: '900', style: 'italic' };
-                else if (name.includes('bolditalic')) descriptors = { weight: '700', style: 'italic' };
-                else if (name.includes('bold')) descriptors = { weight: '700', style: 'normal' };
-                else if (name.includes('regular')) descriptors = { weight: '400', style: 'normal' };
-
-                const fontFace = new FontFace('Lato', buffer, descriptors);
-                const loaded = await fontFace.load();
-                document.fonts.add(loaded);
-            }
-
-            document.getElementById('fontStatusBadge').textContent = `Загружено TTF: ${files.length}`;
-            renderCard();
-            showToast('Локальные шрифты Lato подключены!');
-        }
-
-        async function clearSavedTemplates() {
-            localStorage.removeItem('egger_tpl_1');
-            localStorage.removeItem('egger_tpl_2');
-            state.template1Image = null;
-            state.template2Image = null;
-            await tryLoadTemplates();
-            renderCard();
-            showToast('Кэш сброшен, перезагружены эталонные шаблоны из папки.');
-        }
-
-        function readFileAsDataURL(file) {
-            return new Promise((resolve) => {
-                const reader = new FileReader();
-                reader.onload = e => resolve(e.target.result);
-                reader.readAsDataURL(file);
-            });
-        }
-
-        // ============================================================================
-        // ЭКСПОРТ PNG (1000x1000) И ПАКЕТНЫЙ ZIP
-        // ============================================================================
-        function downloadCurrentCard() {
-            const debugToggle = document.getElementById('debugMasksToggle');
-            const wasDebug = debugToggle.checked;
-            if (wasDebug) {
-                debugToggle.checked = false;
-                renderCard();
-            }
-
-            const canvas = document.getElementById('cardCanvas');
-            const title = (document.getElementById('titleInput').value || 'Карточка_товара').trim();
-            const link = document.createElement('a');
-            link.download = `${title}.png`;
-            link.href = canvas.toDataURL('image/png', 1.0);
-            link.click();
-
-            if (wasDebug) {
-                debugToggle.checked = true;
-                renderCard();
-            }
-            showToast(`Сохранено: ${title}.png (1000×1000 px)`);
-        }
-
-        async function downloadAllQueue() {
-            if (state.photoQueue.length === 0) return;
-            for (let i = 0; i < state.photoQueue.length; i++) {
-                selectQueueItem(i);
-                await new Promise(r => setTimeout(r, 150));
-                downloadCurrentCard();
-                await new Promise(r => setTimeout(r, 250));
-            }
-        }
-
-        async function downloadBatchZip() {
-            if (state.photoQueue.length === 0) return;
-            if (typeof JSZip === 'undefined') return downloadAllQueue();
-
-            const debugToggle = document.getElementById('debugMasksToggle');
-            const wasDebug = debugToggle.checked;
-            debugToggle.checked = false;
-
-            const zip = new JSZip();
-            const canvas = document.getElementById('cardCanvas');
-            showToast(`Формирую ZIP-архив из ${state.photoQueue.length} карточек...`);
-
-            for (let i = 0; i < state.photoQueue.length; i++) {
-                selectQueueItem(i);
-                await new Promise(r => setTimeout(r, 80));
-                const title = (document.getElementById('titleInput').value || `Card_${i + 1}`).trim();
-                const dataUrl = canvas.toDataURL('image/png', 1.0);
-                const base64Data = dataUrl.replace(/^data:image\/png;base64,/, '');
-                zip.file(`${title}.png`, base64Data, { base64: true });
-            }
-
-            if (wasDebug) {
-                debugToggle.checked = true;
-                renderCard();
-            }
-
-            const blob = await zip.generateAsync({ type: 'blob' });
-            const link = document.createElement('a');
-            link.download = `Egger_Cards_${state.photoQueue.length}pcs.zip`;
-            link.href = URL.createObjectURL(blob);
-            link.click();
-            showToast(`Скачан архив: Egger_Cards_${state.photoQueue.length}pcs.zip!`);
-        }
-
-        function copyCanvasToClipboard() {
-            const canvas = document.getElementById('cardCanvas');
-            canvas.toBlob(async (blob) => {
-                try {
-                    await navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })]);
-                    showToast('Картинка скопирована в буфер обмена!');
-                } catch (e) {
-                    downloadCurrentCard();
-                }
-            });
-        }
-
-        function openTemplateModal() { document.getElementById('templateModal').classList.remove('hidden'); }
-        function closeTemplateModal() { document.getElementById('templateModal').classList.add('hidden'); }
-
-        let toastTimer = null;
-        function showToast(msg) {
-            const box = document.getElementById('toastBox');
-            document.getElementById('toastMessage').textContent = msg;
-            box.classList.remove('hidden');
-            clearTimeout(toastTimer);
-            toastTimer = setTimeout(() => box.classList.add('hidden'), 3200);
-        }
-    </script>
+      }));
+    }).then(rematch);
+  }
+  function rematch() {
+    ITEMS.forEach(function (it) {
+      var keep = {};
+      (it.list || []).forEach(function (x) { keep[x.p.nom] = x.on; });
+      var r = Match.match(it.file, PRODUCTS);
+      it.note = r.note;
+      it.list = r.list.map(function (x) { return { p: x.p, on: x.p.nom in keep ? keep[x.p.nom] : x.on }; });
+    });
+    renderBrands();
+    render();
+  }
+
+  function mode() { return document.querySelector('input[name=mode]:checked').value; }
+  [].forEach.call(document.querySelectorAll('input[name=mode]'), function (r) { r.onchange = redrawAll; });
+
+  function draw(x, img) {
+    var c = x.canvas || (x.canvas = document.createElement('canvas'));
+    if (mode() === 'clean') {
+      var k = Math.min(1, 1600 / Math.max(img.width, img.height));
+      c.width = Math.round(img.width * k); c.height = Math.round(img.height * k);
+      c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
+      return { miss: [] };
+    }
+    var cd = CardGen.cardData(x.p, brandFor(x.p.factory));
+    CardGen.render(c, img, cd.data);
+    return cd;
+  }
+
+  function render() {
+    $('resBox').hidden = !ITEMS.length;
+    var n = 0;
+    $('res').innerHTML = ITEMS.map(function (it, i) {
+      var head = '<div class="file"><b>' + esc(it.file) + '</b>' + (it.note ? ' — <span class="note">' + esc(it.note) + '</span>' : '') + '</div>';
+      if (!it.list.length) return head + '<p class="tag bad">Товар не найден. Проверьте артикул в имени файла или что товар есть в таблице «Каталог».</p>';
+      return head + '<div class="grid">' + it.list.map(function (x, j) {
+        if (x.on) n++;
+        return '<div class="tile' + (x.on ? '' : ' off') + '" data-i="' + i + '" data-j="' + j + '"><div class="cv"></div><div class="b">' +
+          '<div class="t">' + esc(x.p.nom) + '</div>' +
+          '<span class="tag">' + esc(x.p.factory) + '</span><span class="tag">' + esc(x.p.coll) + '</span><div class="miss"></div>' +
+          '<label class="chk"><input type="checkbox" data-on="1"' + (x.on ? ' checked' : '') + '> скачать</label></div></div>';
+      }).join('') + '</div>';
+    }).join('');
+    $('count').textContent = n ? '— отмечено ' + n : '';
+    redrawAll();
+  }
+  function redrawAll() {
+    [].forEach.call(document.querySelectorAll('#res .tile'), function (t) {
+      var it = ITEMS[+t.dataset.i], x = it.list[+t.dataset.j];
+      var cd = draw(x, it.img);
+      t.querySelector('.cv').appendChild(x.canvas);
+      var miss = cd.miss || [];
+      t.querySelector('.miss').innerHTML = miss.length ? '<span class="tag warn">нет значка: ' + esc(miss.join(', ')) + '</span>' : '<span class="tag ok">все значки</span>';
+    });
+  }
+  $('res').addEventListener('change', function (e) {
+    if (!e.target.dataset.on) return;
+    var t = e.target.closest('.tile'), x = ITEMS[+t.dataset.i].list[+t.dataset.j];
+    x.on = e.target.checked; t.classList.toggle('off', !x.on);
+    var n = 0; ITEMS.forEach(function (it) { it.list.forEach(function (y) { if (y.on) n++; }); });
+    $('count').textContent = n ? '— отмечено ' + n : '';
+  });
+  $('res').addEventListener('click', function (e) {
+    if (e.target.tagName !== 'CANVAS') return;
+    var z = $('zoom'), c = document.createElement('canvas');
+    c.width = e.target.width; c.height = e.target.height; c.getContext('2d').drawImage(e.target, 0, 0);
+    z.innerHTML = ''; z.appendChild(c); z.style.display = 'flex';
+  });
+  $('zoom').onclick = function () { this.style.display = 'none'; };
+  $('clear').onclick = function () { ITEMS = []; render(); };
+
+  $('zip').onclick = function () {
+    var picked = [];
+    ITEMS.forEach(function (it) { it.list.forEach(function (x) { if (x.on && x.canvas) picked.push(x); }); });
+    if (!picked.length) { toast('Ничего не отмечено'); return; }
+    var btn = this; btn.disabled = true; btn.textContent = 'Собираю…';
+    var zip = new JSZip(), names = {};
+    Promise.all(picked.map(function (x) {
+      var name = Match.fileNameFor(x.p, 'jpg');
+      if (names[name]) return null;       // одна номенклатура — один файл
+      names[name] = 1;
+      return new Promise(function (res) { x.canvas.toBlob(function (b) { zip.file(name, b); res(); }, 'image/jpeg', 0.9); });
+    })).then(function () { return zip.generateAsync({ type: 'blob' }); }).then(function (blob) {
+      var a = document.createElement('a');
+      a.href = URL.createObjectURL(blob); a.download = 'карточки-' + new Date().toISOString().slice(0, 10) + '.zip';
+      document.body.appendChild(a); a.click(); a.remove();
+      toast('Готово: ' + Object.keys(names).length + ' файлов');
+    }).catch(function () { toast('Не получилось собрать архив'); })
+      .then(function () { btn.disabled = false; btn.textContent = 'Скачать отмеченные (ZIP)'; });
+  };
+
+  CardGen.init().then(loadData);
+})();
+</script>
 </body>
 </html>
